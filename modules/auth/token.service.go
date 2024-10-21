@@ -9,6 +9,44 @@ import (
 	"time"
 )
 
+func refreshAuth(refreshToken string) {
+
+}
+
+func verifyToken(refreshToken string, tokenType Type) (*ModelToken, error) {
+	token, err := jwt.Parse(refreshToken, func(token *jwt.Token) (interface{}, error) {
+		return []byte(os.Getenv("JWT_SECRET")), nil
+	})
+
+	if err != nil || !token.Valid {
+		return nil, fmt.Errorf("invalid refresh token")
+	}
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return nil, fmt.Errorf("invalid refresh token")
+	}
+
+	userId := claims["sub"].(string)
+
+	var modelToken ModelToken
+	tokenData := db.Data.Where(
+		"token = ? AND "+
+			"userId = ? AND "+
+			"type = ? AND "+
+			"blacklisted = FALSE",
+		refreshToken,
+		userId,
+		tokenType).First(&modelToken)
+
+	if tokenData.Error != nil {
+		return nil, fmt.Errorf("token not found")
+	}
+
+	return &modelToken, nil
+
+}
+
 func generateAccessToken(user *user.ModelUser, expire int64, types Type) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"sub":  user.ID,
@@ -38,7 +76,7 @@ func saveToken(userId uint, token string, Type Type, Expires time.Time) error {
 	return db.Data.Create(dataToken).Error
 }
 
-func generateAuthToken(user *user.ModelUser) (*ResponseAuthToken, error) {
+func generateToken(user *user.ModelUser) (*ResponseAuthToken, error) {
 	accessTokenExpire := time.Now().Add(time.Minute * 15).Unix() // Access token valid for 15 minutes
 	accessToken, accessTokenErr := generateAccessToken(user, accessTokenExpire, Access)
 	refreshTokenExpire := time.Now().Add(time.Hour * 72).Unix() // Refresh token valid for 72 hours
