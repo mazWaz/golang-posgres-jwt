@@ -20,13 +20,13 @@ type ModelUser struct {
 	Role     Role   `gorm:"type:varchar(10);not null" json:"-"`
 }
 
-type ValidateCreateUser struct {
+type RequestCreateUser struct {
 	Username string `json:"username" validate:"required,min=3,max=32"`
 	Password string `json:"password" validate:"required,min=8"`
 	Role     string `json:"role" validate:"required,oneof=admin use"`
 }
 
-type ValidateUpdateUser struct {
+type RequestUpdateUser struct {
 	Username string `json:"username" validate:"min=3,max=32"`
 	Password string `json:"password" validate:"min=8"`
 	Role     string `json:"role" validate:"oneof=admin use"`

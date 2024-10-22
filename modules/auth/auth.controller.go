@@ -6,7 +6,7 @@ import (
 )
 
 func Login(c *gin.Context) {
-	var req ValidateLogin
+	var req RequestLogin
 	_ = c.BindJSON(&req)
 
 	userData, errCredential := LoginWithUsernameAndPassword(req.Username, req.Password)
@@ -15,45 +15,54 @@ func Login(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": errCredential})
 	}
 
-	token, tokenErr := generateToken(userData)
+	token, tokenErr := GenerateToken(userData)
 
 	if tokenErr != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"code":    http.StatusInternalServerError,
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"code":    http.StatusUnauthorized,
 			"message": "Could Not Generate Token",
 		})
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"code":  http.StatusOK,
-		"user":  userData,
-		"token": token,
-	})
-}
-
-func RefreshToken(c *gin.Context) {
-	var req ValidateRefreshToken
-	_ = c.BindJSON(&req)
-
-	c.JSON(http.StatusOK, gin.H{
-		"access_token":  accessToken,
-		"refresh_token": refreshToken,
+		"code": http.StatusOK,
+		"data": gin.H{
+			"user":  userData,
+			"token": token,
+		},
 	})
 }
 
 func Logout(c *gin.Context) {
-	userInterface, exists := c.Get("user")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
-		return
-	}
+	var req RequestRefreshToken
+	_ = c.BindJSON(&req)
+	logoutData := LogoutWithRefreshToken(req.RefreshToken)
 
-	user := userInterface.(models.User)
-	user.TokenVersion += 1
-	if err := models.DB.Save(&user).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not logout user"})
-		return
+	if logoutData != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"code":    http.StatusUnauthorized,
+			"message": "Please authenticate",
+		})
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Successfully logged out"})
+}
+
+func RefreshToken(c *gin.Context) {
+	var req RequestRefreshToken
+	_ = c.BindJSON(&req)
+
+	generateRefreshAuth, err := RefreshAuth(req.RefreshToken)
+
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"code":    http.StatusUnauthorized,
+			"message": "Please authenticate",
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code": http.StatusOK,
+		"data": generateRefreshAuth,
+	})
 }

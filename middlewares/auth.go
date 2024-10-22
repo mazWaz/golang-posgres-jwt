@@ -1,6 +1,7 @@
 package middlewares
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"net/http"
@@ -12,70 +13,59 @@ func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header is required"})
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"code":    http.StatusUnauthorized,
+				"message": "Authorization header is required",
+			})
 			c.Abort()
 			return
 		}
 
+		// Extract the token from the Authorization header
 		tokenString := strings.Replace(authHeader, "Bearer ", "", 1)
+
+		// Get JWT secret from environment variable
+		jwtSecret := os.Getenv("JWT_SECRET")
+		if jwtSecret == "" {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"code":    http.StatusInternalServerError,
+				"message": "JWT secret not configured",
+			})
+			c.Abort()
+			return
+		}
+
+		// Parse the token with validation of the signing method
 		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-			return []byte(os.Getenv("JWT_SECRET")), nil
+			// Ensure the token's signing method is as expected
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+			}
+			return []byte(jwtSecret), nil
 		})
 
-		if err != nil || !token.Valid {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"code":    http.StatusUnauthorized,
+				"message": "Failed to parse token: " + err.Error(),
+			})
 			c.Abort()
 			return
 		}
 
-		claims, ok := token.Claims.(jwt.MapClaims)
-		if !ok {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token claims"})
+		// Validate the token and extract claims
+		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+			c.Set("userID", claims["userID"])
+			c.Set("role", claims["role"])
+		} else {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"code":    http.StatusUnauthorized,
+				"message": "Invalid token claims",
+			})
 			c.Abort()
 			return
 		}
 
-		c.Set("userID", claims["userID"])
-		c.Set("role", claims["role"])
 		c.Next()
 	}
 }
-
-//func AuthMiddleware() gin.HandlerFunc {
-//	return func(c *gin.Context) {
-//		// Get the token from the header
-//		authHeader := c.GetHeader("Authorization")
-//		if authHeader == "" {
-//			c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header required"})
-//			c.Abort()
-//			return
-//		}
-//
-//		// Extract the token
-//		tokenString := strings.TrimSpace(strings.Replace(authHeader, "Bearer", "", 1))
-//
-//		// Parse the token
-//		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-//			return []byte(os.Getenv("JWT_SECRET")), nil
-//		})
-//
-//		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-//			// Retrieve the user from the database
-//			var user models.User
-//			userID := uint(claims["user_id"].(float64))
-//			if err := models.DB.First(&user, userID).Error; err != nil {
-//				c.JSON(http.StatusUnauthorized, gin.H{"error": "User not found"})
-//				c.Abort()
-//				return
-//			}
-//
-//			// Store the user in the context
-//			c.Set("user", user)
-//			c.Next()
-//		} else {
-//			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
-//			c.Abort()
-//			return
-//		}
-//	}
-//}

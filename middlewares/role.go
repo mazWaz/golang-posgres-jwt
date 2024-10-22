@@ -2,10 +2,11 @@ package middlewares
 
 import (
 	"github.com/gin-gonic/gin"
+	"go-clean/modules/auth"
 	"net/http"
 )
 
-func AdminOnly() gin.HandlerFunc {
+func Role(allowedRoles ...auth.ROLE) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		role, exists := c.Get("role")
 		if !exists {
@@ -14,12 +15,28 @@ func AdminOnly() gin.HandlerFunc {
 			return
 		}
 
-		if role != "admin" {
-			c.JSON(http.StatusForbidden, gin.H{"error": "Admin access required"})
+		roleStr, ok := role.(string)
+		if !ok {
+			c.JSON(http.StatusForbidden, gin.H{"error": "Invalid role type"})
 			c.Abort()
 			return
 		}
 
+		isAllowed := false
+		for _, allowedRole := range allowedRoles {
+			if roleStr == string(allowedRole) {
+				isAllowed = true
+				break
+			}
+		}
+
+		if !isAllowed {
+			c.JSON(http.StatusForbidden, gin.H{"error": "Access denied"})
+			c.Abort()
+			return
+		}
+
+		// Proceed to the next middleware/handler
 		c.Next()
 	}
 }

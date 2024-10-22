@@ -9,22 +9,18 @@ import (
 	"time"
 )
 
-func refreshAuth(refreshToken string) {
-
-}
-
-func verifyToken(refreshToken string, tokenType Type) (*ModelToken, error) {
+func VerifyToken(refreshToken string, tokenType TokenType) (*ModelToken, error) {
 	token, err := jwt.Parse(refreshToken, func(token *jwt.Token) (interface{}, error) {
 		return []byte(os.Getenv("JWT_SECRET")), nil
 	})
 
 	if err != nil || !token.Valid {
-		return nil, fmt.Errorf("invalid refresh token")
+		return nil, fmt.Errorf("INVALID Refresh Token")
 	}
 
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok {
-		return nil, fmt.Errorf("invalid refresh token")
+		return nil, fmt.Errorf("INVALID Refresh Token")
 	}
 
 	userId := claims["sub"].(string)
@@ -40,24 +36,14 @@ func verifyToken(refreshToken string, tokenType Type) (*ModelToken, error) {
 		tokenType).First(&modelToken)
 
 	if tokenData.Error != nil {
-		return nil, fmt.Errorf("token not found")
+		return nil, fmt.Errorf("FAIL Token Not Found")
 	}
 
 	return &modelToken, nil
 
 }
 
-func generateAccessToken(user *user.ModelUser, expire int64, types Type) (string, error) {
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"sub":  user.ID,
-		"role": user.Role,
-		"type": "access",
-		"exp":  expire,
-	})
-	return token.SignedString([]byte(os.Getenv("JWT_SECRET")))
-}
-
-func generateRefreshToken(user *user.ModelUser, expire int64, types Type) (string, error) {
+func GenerateAccessToken(user *user.ModelUser, expire int64, types TokenType) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"sub":  user.ID,
 		"role": user.Role,
@@ -67,29 +53,39 @@ func generateRefreshToken(user *user.ModelUser, expire int64, types Type) (strin
 	return token.SignedString([]byte(os.Getenv("JWT_SECRET")))
 }
 
-func saveToken(userId uint, token string, Type Type, Expires time.Time) error {
+func GenerateRefreshToken(user *user.ModelUser, expire int64, types TokenType) (string, error) {
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"sub":  user.ID,
+		"role": user.Role,
+		"type": types,
+		"exp":  expire,
+	})
+	return token.SignedString([]byte(os.Getenv("JWT_SECRET")))
+}
+
+func SaveToken(userId uint, token string, Type TokenType, Expires time.Time) error {
 	var dataToken ModelToken
 	dataToken.Token = token
-	dataToken.UserId = userId
+	dataToken.UserID = userId
 	dataToken.Type = Type
 	dataToken.Expires = Expires
 	return db.Data.Create(dataToken).Error
 }
 
-func generateToken(user *user.ModelUser) (*ResponseAuthToken, error) {
+func GenerateToken(user *user.ModelUser) (*ResponseAuthToken, error) {
 	accessTokenExpire := time.Now().Add(time.Minute * 15).Unix() // Access token valid for 15 minutes
-	accessToken, accessTokenErr := generateAccessToken(user, accessTokenExpire, Access)
+	accessToken, accessTokenErr := GenerateAccessToken(user, accessTokenExpire, Access)
 	refreshTokenExpire := time.Now().Add(time.Hour * 72).Unix() // Refresh token valid for 72 hours
-	refreshToken, refreshTokenErr := generateRefreshToken(user, refreshTokenExpire, Refresh)
+	refreshToken, refreshTokenErr := GenerateRefreshToken(user, refreshTokenExpire, Refresh)
 
-	err := saveToken(user.ID, refreshToken, Refresh, time.Unix(refreshTokenExpire, 0))
+	err := SaveToken(user.ID, refreshToken, Refresh, time.Unix(refreshTokenExpire, 0))
 
 	if err != nil {
-		return nil, fmt.Errorf("fail save token")
+		return nil, fmt.Errorf("FAIL Save Token")
 	}
 
 	if accessTokenErr != nil || refreshTokenErr != nil {
-		return nil, fmt.Errorf("fail generate token")
+		return nil, fmt.Errorf("FAIL Generate Token")
 	}
 
 	return &ResponseAuthToken{
