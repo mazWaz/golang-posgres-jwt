@@ -27,5 +27,15 @@ func InitDB() {
 	// Migrate the schema
 	//database.AutoMigrate(&User{})
 
-	DB = database
+	Data = database
+}
+func CloseDatabaseConnection(db *gorm.DB) {
+	dbSQL, err := db.DB()
+	if err != nil {
+		panic(err)
+	}
+	err = dbSQL.Close()
+	if err != nil {
+		panic(err)
+	}
 }

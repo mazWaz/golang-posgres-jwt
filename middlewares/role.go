@@ -2,11 +2,11 @@ package middlewares
 
 import (
 	"github.com/gin-gonic/gin"
-	"go-clean/modules/auth"
+	"go-clean/modules/user"
 	"net/http"
 )
 
-func Role(allowedRoles ...auth.ROLE) gin.HandlerFunc {
+func Role(allowedRoles ...user.ROLE) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		role, exists := c.Get("role")
 		if !exists {

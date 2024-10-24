@@ -7,6 +7,7 @@ import (
 )
 
 type Config struct {
+	AppPort    string
 	DbHost     string
 	DbPort     string
 	DbUser     string
@@ -25,6 +26,7 @@ func init() {
 
 func LoadConfig() *Config {
 	config := &Config{
+		AppPort:    os.Getenv("APP_PORT"),
 		DbHost:     os.Getenv("DB_HOST"),
 		DbPort:     os.Getenv("DB_PORT"),
 		DbUser:     os.Getenv("DB_USER"),

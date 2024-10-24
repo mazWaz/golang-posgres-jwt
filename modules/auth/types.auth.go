@@ -5,14 +5,6 @@ import (
 	"time"
 )
 
-type ROLE string
-
-const (
-	SUPERADMIN ROLE = "SUPERADMIN"
-	ADMIN      ROLE = "ADMIN"
-	USER       ROLE = "USER"
-)
-
 type TokenType string
 
 const (
@@ -30,6 +22,10 @@ type ModelToken struct {
 	Blacklisted bool           `gorm:"-" json:"-"`
 	UserID      uint           `gorm:"not null"`
 	User        user.ModelUser `gorm:"constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
+}
+
+func (ModelToken) TableName() string {
+	return "tokens"
 }
 
 type RequestLogin struct {

@@ -7,9 +7,11 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func LoginWithUsernameAndPassword(username string, password string) (*user.ModelUser, error) {
+type NewAuthService struct{}
 
-	userData, err := user.GetUserByUsername(username)
+func (s *NewAuthService) LoginWithUsernameAndPassword(username string, password string) (*user.ModelUser, error) {
+
+	userData, err := user.Service.GetUserByUsername(username)
 
 	if err != nil || bcrypt.CompareHashAndPassword([]byte(userData.Password), []byte(password)) != nil {
 		return nil, fmt.Errorf("invalid credentials")
@@ -20,7 +22,7 @@ func LoginWithUsernameAndPassword(username string, password string) (*user.Model
 	return userData, nil
 }
 
-func LogoutWithRefreshToken(refreshToken string) error {
+func (s *NewAuthService) LogoutWithRefreshToken(refreshToken string) error {
 	var modelToken ModelToken
 	tokenData := db.Data.Where(
 		"token = ? AND "+
@@ -39,15 +41,15 @@ func LogoutWithRefreshToken(refreshToken string) error {
 	return nil
 }
 
-func RefreshAuth(refreshToken string) (*ResponseAuthToken, error) {
-	refreshTokenData, tokenError := VerifyToken(refreshToken, Refresh)
+func (s *NewAuthService) RefreshAuth(refreshToken string) (*ResponseAuthToken, error) {
+	refreshTokenData, tokenError := TokenService.VerifyToken(refreshToken, Refresh)
 	if tokenError != nil {
 		return nil, tokenError
 	}
 
 	userId := refreshTokenData.UserID
 
-	userData, err := user.GetUserByID(userId)
+	userData, err := user.Service.GetUserByID(userId)
 	if err != nil {
 		return nil, fmt.Errorf("ERROR User not Found")
 	}
@@ -57,7 +59,7 @@ func RefreshAuth(refreshToken string) (*ResponseAuthToken, error) {
 		return nil, fmt.Errorf("ERROR Deleting User")
 	}
 
-	token, tokenErr := GenerateToken(userData)
+	token, tokenErr := TokenService.GenerateToken(userData)
 	if tokenErr != nil {
 		return nil, fmt.Errorf("ERROR Generating Token")
 
@@ -66,3 +68,5 @@ func RefreshAuth(refreshToken string) (*ResponseAuthToken, error) {
 	return token, nil
 
 }
+
+var AuthService = &NewAuthService{}

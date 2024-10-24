@@ -5,17 +5,19 @@ import (
 	"net/http"
 )
 
-func Login(c *gin.Context) {
+type NewAuthController struct{}
+
+func (s *NewAuthController) Login(c *gin.Context) {
 	var req RequestLogin
 	_ = c.BindJSON(&req)
 
-	userData, errCredential := LoginWithUsernameAndPassword(req.Username, req.Password)
+	userData, errCredential := AuthService.LoginWithUsernameAndPassword(req.Username, req.Password)
 
 	if errCredential != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": errCredential})
 	}
 
-	token, tokenErr := GenerateToken(userData)
+	token, tokenErr := TokenService.GenerateToken(userData)
 
 	if tokenErr != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
@@ -33,10 +35,10 @@ func Login(c *gin.Context) {
 	})
 }
 
-func Logout(c *gin.Context) {
+func (s *NewAuthController) Logout(c *gin.Context) {
 	var req RequestRefreshToken
 	_ = c.BindJSON(&req)
-	logoutData := LogoutWithRefreshToken(req.RefreshToken)
+	logoutData := AuthService.LogoutWithRefreshToken(req.RefreshToken)
 
 	if logoutData != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
@@ -48,11 +50,11 @@ func Logout(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Successfully logged out"})
 }
 
-func RefreshToken(c *gin.Context) {
+func (s *NewAuthController) RefreshToken(c *gin.Context) {
 	var req RequestRefreshToken
 	_ = c.BindJSON(&req)
 
-	generateRefreshAuth, err := RefreshAuth(req.RefreshToken)
+	generateRefreshAuth, err := AuthService.RefreshAuth(req.RefreshToken)
 
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
@@ -66,3 +68,5 @@ func RefreshToken(c *gin.Context) {
 		"data": generateRefreshAuth,
 	})
 }
+
+var Controller = &NewAuthController{}

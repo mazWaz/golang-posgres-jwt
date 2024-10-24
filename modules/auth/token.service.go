@@ -9,7 +9,9 @@ import (
 	"time"
 )
 
-func VerifyToken(refreshToken string, tokenType TokenType) (*ModelToken, error) {
+type NewTokenService struct{}
+
+func (s *NewTokenService) VerifyToken(refreshToken string, tokenType TokenType) (*ModelToken, error) {
 	token, err := jwt.Parse(refreshToken, func(token *jwt.Token) (interface{}, error) {
 		return []byte(os.Getenv("JWT_SECRET")), nil
 	})
@@ -43,7 +45,7 @@ func VerifyToken(refreshToken string, tokenType TokenType) (*ModelToken, error) 
 
 }
 
-func GenerateAccessToken(user *user.ModelUser, expire int64, types TokenType) (string, error) {
+func (s *NewTokenService) GenerateAccessToken(user *user.ModelUser, expire int64, types TokenType) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"sub":  user.ID,
 		"role": user.Role,
@@ -53,7 +55,7 @@ func GenerateAccessToken(user *user.ModelUser, expire int64, types TokenType) (s
 	return token.SignedString([]byte(os.Getenv("JWT_SECRET")))
 }
 
-func GenerateRefreshToken(user *user.ModelUser, expire int64, types TokenType) (string, error) {
+func (s *NewTokenService) GenerateRefreshToken(user *user.ModelUser, expire int64, types TokenType) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"sub":  user.ID,
 		"role": user.Role,
@@ -63,7 +65,7 @@ func GenerateRefreshToken(user *user.ModelUser, expire int64, types TokenType) (
 	return token.SignedString([]byte(os.Getenv("JWT_SECRET")))
 }
 
-func SaveToken(userId uint, token string, Type TokenType, Expires time.Time) error {
+func (s *NewTokenService) SaveToken(userId uint, token string, Type TokenType, Expires time.Time) error {
 	var dataToken ModelToken
 	dataToken.Token = token
 	dataToken.UserID = userId
@@ -72,13 +74,13 @@ func SaveToken(userId uint, token string, Type TokenType, Expires time.Time) err
 	return db.Data.Create(dataToken).Error
 }
 
-func GenerateToken(user *user.ModelUser) (*ResponseAuthToken, error) {
+func (s *NewTokenService) GenerateToken(user *user.ModelUser) (*ResponseAuthToken, error) {
 	accessTokenExpire := time.Now().Add(time.Minute * 15).Unix() // Access token valid for 15 minutes
-	accessToken, accessTokenErr := GenerateAccessToken(user, accessTokenExpire, Access)
+	accessToken, accessTokenErr := TokenService.GenerateAccessToken(user, accessTokenExpire, Access)
 	refreshTokenExpire := time.Now().Add(time.Hour * 72).Unix() // Refresh token valid for 72 hours
-	refreshToken, refreshTokenErr := GenerateRefreshToken(user, refreshTokenExpire, Refresh)
+	refreshToken, refreshTokenErr := TokenService.GenerateRefreshToken(user, refreshTokenExpire, Refresh)
 
-	err := SaveToken(user.ID, refreshToken, Refresh, time.Unix(refreshTokenExpire, 0))
+	err := TokenService.SaveToken(user.ID, refreshToken, Refresh, time.Unix(refreshTokenExpire, 0))
 
 	if err != nil {
 		return nil, fmt.Errorf("FAIL Save Token")
@@ -99,3 +101,5 @@ func GenerateToken(user *user.ModelUser) (*ResponseAuthToken, error) {
 		},
 	}, nil
 }
+
+var TokenService = &NewTokenService{}
