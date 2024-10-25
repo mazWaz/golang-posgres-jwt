@@ -1,13 +1,12 @@
 package user
 
 import (
-	"fmt"
-	"go-clean/db"
 	"go-clean/utils"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type NewController struct{}
@@ -86,14 +85,22 @@ func (s *NewController) GetUser(c *gin.Context) {
 func (s *NewController) CreateUser(c *gin.Context) {
 	// Get form data
 	var req RequestCreateUser
-	fmt.Println(c.Request.Body)
 
 	_ = c.BindJSON(&req)
+
+	//Hash password
+	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), 10)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "failed to generate password",
+		})
+		return
+	}
 
 	// Assign form data JSON to struct
 	var userData ModelUser
 	userData.Username = req.Username
-	userData.Password = req.Password
+	userData.Password = string(hash)
 	userData.Role = req.Role
 
 	// Insert Data
@@ -123,9 +130,7 @@ func (s *NewController) UpdateUSer(c *gin.Context) {
 	}
 
 	// Get form data
-	var userData ModelUser
 	var req RequestUpdateUser
-
 	err := c.BindJSON(&req)
 
 	if err != nil {
@@ -134,26 +139,10 @@ func (s *NewController) UpdateUSer(c *gin.Context) {
 		})
 		return
 	}
-
-	// Find record by id
-	errFind := db.Data.Table("users").Where("id = ?", id).Find(&userData).Error
-	if errFind != nil {
-		c.JSON(500, gin.H{
-			"error": "internal server error",
-		})
-		return
-	}
-
-	if userData.ID == 0 {
-		c.JSON(http.StatusNotFound, gin.H{
-			"error": "record not found",
-		})
-	}
-
 	userId := uint(id)
 
 	// Update data to db
-	errUpdate := Service.UpdateUser(userId, req, &userData)
+	errUpdate := Service.UpdateUser(userId, req)
 
 	if errUpdate != nil {
 		c.JSON(400, gin.H{
@@ -162,16 +151,22 @@ func (s *NewController) UpdateUSer(c *gin.Context) {
 		return
 	}
 
-	// return
-	c.JSON(200, gin.H{
+	// Get updated data in JSON
+	updatedUser, errFetch := Service.GetUserByID(userId)
+	if errFetch != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "failed to fetch updated record",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
 		"message": "record has been updated",
-		"data":    userData,
+		"data":    updatedUser,
 	})
 }
 
 func (s *NewController) DeleteUser(c *gin.Context) {
-	var userData ModelUser
-
 	// Get record id
 	id, err := strconv.Atoi(c.Param("id"))
 
@@ -180,26 +175,19 @@ func (s *NewController) DeleteUser(c *gin.Context) {
 			"error": "missing record id",
 		})
 	}
+	userId := uint(id)
 
 	// Find record by id
-	errFind := db.Data.Table("users").Where("id = ?", id).Find(&userData).Error
-	if errFind != nil {
+	_, errFetch := Service.GetUserByID(userId)
+	if errFetch != nil {
 		c.JSON(500, gin.H{
-			"error": "internal server error",
+			"error": "record doesn't exist",
 		})
 		return
 	}
 
-	if userData.ID == 0 {
-		c.JSON(http.StatusNotFound, gin.H{
-			"error": "record not found",
-		})
-	}
-
 	// Delete record
-	userId := uint(id)
 	errDelete := Service.DeleteUser(userId)
-
 	if errDelete != nil {
 		c.JSON(400, gin.H{
 			"error": "failed to delete record",
@@ -209,8 +197,7 @@ func (s *NewController) DeleteUser(c *gin.Context) {
 
 	// Return
 	c.JSON(200, gin.H{
-
-		"error": "record has been deleted",
+		"message": "record has been deleted",
 	})
 }
 

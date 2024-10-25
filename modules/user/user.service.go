@@ -22,7 +22,7 @@ func (s *NewUserService) GetUserByEmail(email string) (*ModelUser, error) {
 
 func (s *NewUserService) GetUserByID(id uint) (*ModelUser, error) {
 	var user ModelUser
-	err := db.Data.First(&user, id).Error
+	err := db.Data.Find(&user, id).Error
 	return &user, err
 }
 
@@ -44,11 +44,10 @@ func (s *NewUserService) CreateUser(user *ModelUser) error {
 	return db.Data.Create(user).Error
 }
 
-func (s *NewUserService) UpdateUser(id uint, input RequestUpdateUser, user *ModelUser) error {
-	_, err := Service.GetUserByID(id)
+func (s *NewUserService) UpdateUser(id uint, input RequestUpdateUser) error {
+	user, err := Service.GetUserByID(id)
 	if err != nil {
 		return err
-
 	}
 	return db.Data.Model(&user).Updates(input).Error
 }
