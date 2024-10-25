@@ -14,10 +14,6 @@ func (s *NewUserService) GetUserByUsername(username string) (*ModelUser, error) 
 	return &user, nil
 }
 
-func (s *NewUserService) CreateUser(user *ModelUser) error {
-	return db.Data.Create(user).Error
-}
-
 func (s *NewUserService) GetUserByEmail(email string) (*ModelUser, error) {
 	var user ModelUser
 	err := db.Data.Where("email = ?", email).First(&user).Error
@@ -44,8 +40,17 @@ func (s *NewUserService) GetAllUsers(filters map[string]interface{}) ([]ModelUse
 	return users, err
 }
 
-func (s *NewUserService) UpdateUser(user *ModelUser) error {
-	return db.Data.Save(user).Error
+func (s *NewUserService) CreateUser(user *ModelUser) error {
+	return db.Data.Create(user).Error
+}
+
+func (s *NewUserService) UpdateUser(id uint, input RequestUpdateUser, user *ModelUser) error {
+	_, err := Service.GetUserByID(id)
+	if err != nil {
+		return err
+
+	}
+	return db.Data.Model(&user).Updates(input).Error
 }
 
 func (s *NewUserService) DeleteUser(id uint) error {

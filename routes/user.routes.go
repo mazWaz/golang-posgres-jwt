@@ -1,9 +1,9 @@
 package routes
 
 import (
-	"github.com/gin-gonic/gin"
-	"go-clean/middlewares"
 	"go-clean/modules/user"
+
+	"github.com/gin-gonic/gin"
 )
 
 type NewUserRoutes struct{}
@@ -22,17 +22,22 @@ func (s *NewUserRoutes) Init(router *gin.Engine) {
 			//middlewares.Role(auth.SUPERADMIN),
 			user.Controller.GetUsers)
 		userRoutes.GET("/users/:id",
-			middlewares.AuthMiddleware(),
-			middlewares.Role(user.SUPERADMIN),
-			middlewares.ValidationMiddleware(user.RequestQueryUser{}, nil),
+			// middlewares.AuthMiddleware(),
+			// middlewares.Role(user.SUPERADMIN),
+			// middlewares.ValidationMiddleware(user.RequestQueryUser{}, nil),
 			user.Controller.GetUser)
-		userRoutes.PUT("/users/:id",
-			middlewares.AuthMiddleware(),
-			middlewares.Role(user.SUPERADMIN),
+		userRoutes.POST("/users",
+			// middlewares.AuthMiddleware(),
+			// middlewares.Role(user.SUPERADMIN),
+			// middlewares.ValidationMiddleware(nil, &user.RequestCreateUser{}),
+			user.Controller.CreateUser)
+		userRoutes.PATCH("/users/:id",
+			// middlewares.AuthMiddleware(),
+			// middlewares.Role(user.SUPERADMIN),
 			user.Controller.UpdateUSer)
 		userRoutes.DELETE("/users/:id",
-			middlewares.AuthMiddleware(),
-			middlewares.Role(user.SUPERADMIN),
+			// middlewares.AuthMiddleware(),
+			// middlewares.Role(user.SUPERADMIN),
 			user.Controller.DeleteUser)
 	}
 }

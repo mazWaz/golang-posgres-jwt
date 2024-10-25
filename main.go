@@ -1,7 +1,6 @@
 package main
 
 import (
-	"github.com/gin-gonic/gin"
 	"go-clean/cmd"
 	"go-clean/config"
 	"go-clean/db"
@@ -9,6 +8,8 @@ import (
 	"go-clean/routes"
 	"log"
 	"os"
+
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
