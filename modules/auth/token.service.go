@@ -2,11 +2,12 @@ package auth
 
 import (
 	"fmt"
-	"github.com/golang-jwt/jwt/v5"
 	"go-clean/db"
 	"go-clean/modules/user"
 	"os"
 	"time"
+
+	"github.com/golang-jwt/jwt/v5"
 )
 
 type NewTokenService struct{}
@@ -68,10 +69,12 @@ func (s *NewTokenService) GenerateRefreshToken(user *user.ModelUser, expire int6
 func (s *NewTokenService) SaveToken(userId uint, token string, Type TokenType, Expires time.Time) error {
 	var dataToken ModelToken
 	dataToken.Token = token
-	dataToken.UserID = userId
 	dataToken.Type = Type
 	dataToken.Expires = Expires
-	return db.Data.Create(dataToken).Error
+	dataToken.Blacklisted = false
+	dataToken.UserID = userId
+
+	return db.Data.Create(&dataToken).Error
 }
 
 func (s *NewTokenService) GenerateToken(user *user.ModelUser) (*ResponseAuthToken, error) {
@@ -80,14 +83,13 @@ func (s *NewTokenService) GenerateToken(user *user.ModelUser) (*ResponseAuthToke
 	refreshTokenExpire := time.Now().Add(time.Hour * 72).Unix() // Refresh token valid for 72 hours
 	refreshToken, refreshTokenErr := TokenService.GenerateRefreshToken(user, refreshTokenExpire, Refresh)
 
+	if accessTokenErr != nil || refreshTokenErr != nil {
+		return nil, fmt.Errorf("FAIL Generate Token")
+	}
 	err := TokenService.SaveToken(user.ID, refreshToken, Refresh, time.Unix(refreshTokenExpire, 0))
 
 	if err != nil {
 		return nil, fmt.Errorf("FAIL Save Token")
-	}
-
-	if accessTokenErr != nil || refreshTokenErr != nil {
-		return nil, fmt.Errorf("FAIL Generate Token")
 	}
 
 	return &ResponseAuthToken{
