@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/go-playground/validator/v10"
 	"go-clean/cmd"
 	"go-clean/config"
 	"go-clean/db"
@@ -12,9 +13,11 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+var validate *validator.Validate
+
 func main() {
 	cfg := config.LoadConfig()
-
+	middlewares.InitValidator()
 	db.InitDB()
 	defer db.CloseDatabaseConnection(db.Data)
 
