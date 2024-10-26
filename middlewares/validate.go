@@ -14,7 +14,10 @@ var validate *validator.Validate
 func init() {
 	validate = validator.New()
 }
+
 func ValidationMiddleware(queryType interface{}, bodyType interface{}) gin.HandlerFunc {
+
+	fmt.Println(queryType)
 	return func(c *gin.Context) {
 		// Validate query parameters
 		if queryType != nil {
@@ -31,13 +34,12 @@ func ValidationMiddleware(queryType interface{}, bodyType interface{}) gin.Handl
 				c.Abort()
 				return
 			}
-			c.Set("validatedQuery", queryObj)
 		}
 
 		// Validate request body
 		if bodyType != nil {
 			bodyObj := reflect.New(reflect.TypeOf(bodyType).Elem()).Interface()
-
+			fmt.Println(bodyType)
 			if err := validate.Struct(bodyObj); err != nil {
 				var errors []string
 				for _, err := range err.(validator.ValidationErrors) {
@@ -50,7 +52,6 @@ func ValidationMiddleware(queryType interface{}, bodyType interface{}) gin.Handl
 				c.Abort()
 				return
 			}
-			c.Set("validatedBody", bodyObj)
 		}
 
 		// Continue to the next handler if validation passes

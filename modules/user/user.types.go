@@ -35,11 +35,11 @@ type RequestQueryUser struct {
 type RequestCreateUser struct {
 	Username string `json:"username" validate:"required,min=3,max=32"`
 	Password string `json:"password" validate:"required,min=8"`
-	Role     string `json:"role" validate:"oneof=SUPERADMIN ADMIN USER"`
+	Role     ROLE   `json:"role" validate:"oneof=SUPERADMIN ADMIN USER"`
 }
 
 type RequestUpdateUser struct {
-	Username string `json:"username" validate:"min=3,max=32"`
-	Password string `json:"password" validate:"min=8"`
-	Role     string `json:"role" validate:"oneof=admin use"`
+	Username string `json:"username,omitempty" validate:"min=3,max=32"`
+	Password string `json:"password,omitempty" validate:"min=8"`
+	Role     string `json:"role,omitempty" validate:"oneof=admin use"`
 }
