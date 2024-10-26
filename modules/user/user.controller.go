@@ -6,7 +6,6 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"golang.org/x/crypto/bcrypt"
 )
 
 type NewController struct{}
@@ -88,8 +87,7 @@ func (s *NewController) CreateUser(c *gin.Context) {
 
 	_ = c.BindJSON(&req)
 
-	//Hash password
-	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), 10)
+	hashedPassword, err := utils.HashPassword([]byte(req.Password))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "failed to generate password",
@@ -100,7 +98,7 @@ func (s *NewController) CreateUser(c *gin.Context) {
 	// Assign form data JSON to struct
 	var userData ModelUser
 	userData.Username = req.Username
-	userData.Password = string(hash)
+	userData.Password = string(hashedPassword)
 	userData.Role = req.Role
 
 	// Insert Data
