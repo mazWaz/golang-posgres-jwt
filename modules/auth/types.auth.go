@@ -3,6 +3,8 @@ package auth
 import (
 	"go-clean/modules/user"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 type TokenType string
@@ -15,6 +17,7 @@ const (
 )
 
 type ModelToken struct {
+	gorm.Model
 	ID          uint           `gorm:"primaryKey;autoIncrement"`
 	Token       string         `gorm:"unique;not null"`
 	Type        TokenType      `gorm:"type:token_type;not null"`

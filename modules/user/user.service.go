@@ -8,9 +8,11 @@ type NewUserService struct{}
 
 func (s *NewUserService) GetUserByUsername(username string) (*ModelUser, error) {
 	var user ModelUser
-	if err := db.Data.Find("username = ?", username).First(&user).Error; err != nil {
+
+	if err := db.Data.Where("username = ?", username).First(&user).Error; err != nil {
 		return nil, err
 	}
+
 	return &user, nil
 }
 

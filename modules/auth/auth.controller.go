@@ -1,8 +1,9 @@
 package auth
 
 import (
-	"github.com/gin-gonic/gin"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 type NewAuthController struct{}
@@ -14,7 +15,9 @@ func (s *NewAuthController) Login(c *gin.Context) {
 	userData, errCredential := AuthService.LoginWithUsernameAndPassword(req.Username, req.Password)
 
 	if errCredential != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": errCredential})
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"code":  http.StatusUnauthorized,
+			"error": errCredential.Error()})
 	}
 
 	token, tokenErr := TokenService.GenerateToken(userData)
@@ -24,6 +27,7 @@ func (s *NewAuthController) Login(c *gin.Context) {
 			"code":    http.StatusUnauthorized,
 			"message": "Could Not Generate Token",
 		})
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
