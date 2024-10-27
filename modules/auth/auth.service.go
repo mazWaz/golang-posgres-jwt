@@ -1,7 +1,7 @@
 package auth
 
 import (
-	"fmt"
+	"errors"
 	"go-clean/db"
 	"go-clean/modules/user"
 	"go-clean/utils"
@@ -10,24 +10,16 @@ import (
 type NewAuthService struct{}
 
 func (s *NewAuthService) LoginWithUsernameAndPassword(username string, password string) (*user.ModelUser, error) {
-	// Get User from DB
+
 	userData, err := user.Service.GetUserByUsername(username)
-	if err != nil {
-		return nil, fmt.Errorf("error retrieving user: %v", err)
-	}
-	if userData == nil {
-		return nil, fmt.Errorf("not found")
-
+	if err != nil || userData == nil {
+		return nil, errors.New("invalid Username or Password")
 	}
 
-	// Compare password in DB with user's input
 	hashErr := utils.ComparePassword(password, userData.Password)
 	if !hashErr {
-		return nil, fmt.Errorf("invalid credentials")
+		return nil, errors.New("invalid Username or Password")
 	}
-
-	// Return userdata without password
-	userData.Password = ""
 
 	return userData, nil
 }
@@ -43,10 +35,10 @@ func (s *NewAuthService) LogoutWithRefreshToken(refreshToken string) error {
 	).First(&modelToken)
 
 	if tokenData.Error != nil {
-		return fmt.Errorf("FAIL Token Not Found")
+		return errors.New("FAIL Token Not Found")
 	}
 	if err := db.Data.Delete(&modelToken, modelToken.ID); err != nil {
-		return fmt.Errorf("ERROR Deleting User")
+		return errors.New("ERROR Deleting User")
 	}
 	return nil
 }
@@ -61,17 +53,17 @@ func (s *NewAuthService) RefreshAuth(refreshToken string) (*ResponseAuthToken, e
 
 	userData, err := user.Service.GetUserByID(userId)
 	if err != nil {
-		return nil, fmt.Errorf("ERROR User not Found")
+		return nil, errors.New("ERROR User not Found")
 	}
 
 	var modelToken ModelToken
 	if err := db.Data.Delete(&modelToken, refreshTokenData.ID); err != nil {
-		return nil, fmt.Errorf("ERROR Deleting User")
+		return nil, errors.New("ERROR Deleting User")
 	}
 
 	token, tokenErr := TokenService.GenerateToken(userData)
 	if tokenErr != nil {
-		return nil, fmt.Errorf("ERROR Generating Token")
+		return nil, errors.New("ERROR Generating Token")
 
 	}
 

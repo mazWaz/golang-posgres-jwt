@@ -1,7 +1,7 @@
 package auth
 
 import (
-	"fmt"
+	"errors"
 	"go-clean/db"
 	"go-clean/modules/user"
 	"os"
@@ -18,12 +18,12 @@ func (s *NewTokenService) VerifyToken(refreshToken string, tokenType TokenType) 
 	})
 
 	if err != nil || !token.Valid {
-		return nil, fmt.Errorf("INVALID Refresh Token")
+		return nil, errors.New("INVALID Refresh Token")
 	}
 
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok {
-		return nil, fmt.Errorf("INVALID Refresh Token")
+		return nil, errors.New("INVALID Refresh Token")
 	}
 
 	userId := claims["sub"].(string)
@@ -39,11 +39,44 @@ func (s *NewTokenService) VerifyToken(refreshToken string, tokenType TokenType) 
 		tokenType).First(&modelToken)
 
 	if tokenData.Error != nil {
-		return nil, fmt.Errorf("FAIL Token Not Found")
+		return nil, errors.New("INVALID Refresh Token")
 	}
 
 	return &modelToken, nil
+}
 
+func (s *NewTokenService) GenerateToken(user *user.ModelUser) (*ResponseAuthToken, error) {
+	accessTokenExpire := time.Now().Add(time.Minute * 15).Unix() // Access token valid for 15 minutes
+	accessToken, accessTokenErr := TokenService.GenerateAccessToken(user, accessTokenExpire, Access)
+	refreshTokenExpire := time.Now().Add(time.Hour * 72).Unix() // Refresh token valid for 72 hours
+	refreshToken, refreshTokenErr := TokenService.GenerateRefreshToken(user, refreshTokenExpire, Refresh)
+
+	if accessTokenErr != nil || refreshTokenErr != nil {
+		return nil, errors.New("FAIL Generate Token")
+	}
+
+	deleteTokenErr := TokenService.DeleteRefreshToken(user.ID)
+
+	if deleteTokenErr != nil {
+		return nil, errors.New("FAIL Save Token")
+	}
+
+	saveTokenErr := TokenService.SaveToken(user.ID, refreshToken, Refresh, time.Unix(refreshTokenExpire, 0))
+
+	if saveTokenErr != nil {
+		return nil, errors.New("FAIL Save Token")
+	}
+
+	return &ResponseAuthToken{
+		Access: ResponseToken{
+			Token:      accessToken,
+			ExpireTime: time.Unix(accessTokenExpire, 0),
+		},
+		Refresh: ResponseToken{
+			Token:      refreshToken,
+			ExpireTime: time.Unix(refreshTokenExpire, 0),
+		},
+	}, nil
 }
 
 func (s *NewTokenService) GenerateAccessToken(user *user.ModelUser, expire int64, types TokenType) (string, error) {
@@ -77,31 +110,10 @@ func (s *NewTokenService) SaveToken(userId uint, token string, Type TokenType, E
 	return db.Data.Create(&dataToken).Error
 }
 
-func (s *NewTokenService) GenerateToken(user *user.ModelUser) (*ResponseAuthToken, error) {
-	accessTokenExpire := time.Now().Add(time.Minute * 15).Unix() // Access token valid for 15 minutes
-	accessToken, accessTokenErr := TokenService.GenerateAccessToken(user, accessTokenExpire, Access)
-	refreshTokenExpire := time.Now().Add(time.Hour * 72).Unix() // Refresh token valid for 72 hours
-	refreshToken, refreshTokenErr := TokenService.GenerateRefreshToken(user, refreshTokenExpire, Refresh)
-
-	if accessTokenErr != nil || refreshTokenErr != nil {
-		return nil, fmt.Errorf("FAIL Generate Token")
-	}
-	err := TokenService.SaveToken(user.ID, refreshToken, Refresh, time.Unix(refreshTokenExpire, 0))
-
-	if err != nil {
-		return nil, fmt.Errorf("FAIL Save Token")
-	}
-
-	return &ResponseAuthToken{
-		Access: ResponseToken{
-			Token:      accessToken,
-			ExpireTime: time.Unix(accessTokenExpire, 0),
-		},
-		Refresh: ResponseToken{
-			Token:      refreshToken,
-			ExpireTime: time.Unix(refreshTokenExpire, 0),
-		},
-	}, nil
+func (s *NewTokenService) DeleteRefreshToken(userId uint) error {
+	//TODO: Fix The Logic
+	//Hard Delete
+	return db.Data.Unscoped().Delete(&ModelToken{}, "user_id = ?", userId).Error
 }
 
 var TokenService = &NewTokenService{}
