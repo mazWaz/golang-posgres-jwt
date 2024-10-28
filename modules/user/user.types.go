@@ -27,8 +27,8 @@ func (ModelUser) TableName() string {
 type RequestQueryUser struct {
 	Username string `form:"username" validate:"omitempty"`
 	Role     string `form:"role" validate:"omitempty,oneof=SUPERADMIN ADMIN USER"`
-	Limit    uint8  `form:"limit" validate:"omitempty,gte=0,lte=100"`
-	Page     uint8  `form:"page" validate:"omitempty,gte=0,lte=100"`
+	Limit    int    `form:"limit" validate:"gte=1,omitempty,lte=100"`
+	Page     int    `form:"page" validate:"gte=1,omitempty,lte=100"`
 }
 
 type RequestCreateUser struct {
