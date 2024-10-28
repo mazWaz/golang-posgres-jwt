@@ -25,8 +25,9 @@ func (s *NewUserService) GetUserByEmail(email string) (*ModelUser, error) {
 
 func (s *NewUserService) GetUserByID(id uint) (*ModelUser, error) {
 	var user ModelUser
-	err := db.Data.Find(&user, id).Error
-	return &user, utils.SanitizeDBError(err)
+	err := db.Data.First(&user, id).Error
+
+	return &user, err
 }
 
 func (s *NewUserService) GetAllUsers(filters map[string]interface{}) ([]ModelUser, error) {

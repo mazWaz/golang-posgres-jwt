@@ -1,7 +1,9 @@
 package user
 
 import (
+	"errors"
 	"go-clean/utils"
+	"gorm.io/gorm"
 	"net/http"
 	"strconv"
 
@@ -29,8 +31,8 @@ func (s *NewController) GetUsers(c *gin.Context) {
 	var users []ModelUser
 
 	pagination, err := utils.Paginate(
-		1,
-		100,
+		int(query.Page),
+		int(query.Limit),
 		filters,
 		&ModelUser{},
 		&users,
@@ -59,6 +61,13 @@ func (s *NewController) GetUser(c *gin.Context) {
 	userData, err := Service.GetUserByID(uint(id))
 
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{
+				"code":   http.StatusNotFound,
+				"errors": "User Not Found",
+			})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":   http.StatusInternalServerError,
 			"errors": "Internal server error",
