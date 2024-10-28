@@ -19,11 +19,11 @@ func (s *NewController) GetProfile(c *gin.Context) {
 func (s *NewController) GetUsers(c *gin.Context) {
 
 	var query RequestQueryUser
-	_ = c.BindQuery(&query)
+	_ = c.Bind(&query)
 
 	filters := map[string]interface{}{
-		"username LIKE": "%" + query.Username + "%",
-		"role":          query.Role,
+		"username LIKE ?": "%" + query.Username + "%",
+		"role = ?":        query.Role,
 	}
 
 	var users []ModelUser
@@ -37,8 +37,8 @@ func (s *NewController) GetUsers(c *gin.Context) {
 	)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"code":    http.StatusInternalServerError,
-			"message": "Internal server error",
+			"code":   http.StatusInternalServerError,
+			"errors": "Internal server error",
 		})
 		return
 	}
@@ -60,16 +60,16 @@ func (s *NewController) GetUser(c *gin.Context) {
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"code":    http.StatusInternalServerError,
-			"message": "Internal server error",
+			"code":   http.StatusInternalServerError,
+			"errors": "Internal server error",
 		})
 		return
 	}
 
 	if userData == nil {
 		c.JSON(http.StatusNotFound, gin.H{
-			"code":    http.StatusNotFound,
-			"message": "User Not Found",
+			"code":   http.StatusNotFound,
+			"errors": "User Not Found",
 		})
 		return
 	}
@@ -90,7 +90,8 @@ func (s *NewController) CreateUser(c *gin.Context) {
 	hashedPassword, err := utils.HashPassword([]byte(req.Password))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "failed to generate password",
+			"code":   http.StatusBadRequest,
+			"errors": "failed to generate password",
 		})
 		return
 	}
@@ -105,14 +106,16 @@ func (s *NewController) CreateUser(c *gin.Context) {
 	errCreate := Service.CreateUser(&userData)
 
 	if errCreate != nil {
-		c.JSON(400, gin.H{
-			"error": "failed to store data in database",
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":   http.StatusBadRequest,
+			"errors": errCreate.Error(),
 		})
 		return
 	}
 
 	// Return data
-	c.JSON(200, gin.H{
+	c.JSON(http.StatusOK, gin.H{
+		"code": http.StatusOK,
 		"data": userData,
 	})
 }
@@ -123,8 +126,10 @@ func (s *NewController) UpdateUSer(c *gin.Context) {
 
 	if errId != nil {
 		c.JSON(http.StatusNotFound, gin.H{
-			"error": "missing record id",
+			"code":   http.StatusNotFound,
+			"errors": "missing record id",
 		})
+		return
 	}
 
 	// Get form data
@@ -132,8 +137,9 @@ func (s *NewController) UpdateUSer(c *gin.Context) {
 	err := c.BindJSON(&req)
 
 	if err != nil {
-		c.JSON(400, gin.H{
-			"error": "cannot get form data",
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":   http.StatusBadRequest,
+			"errors": "cannot get form data",
 		})
 		return
 	}
@@ -143,8 +149,9 @@ func (s *NewController) UpdateUSer(c *gin.Context) {
 	errUpdate := Service.UpdateUser(userId, req)
 
 	if errUpdate != nil {
-		c.JSON(400, gin.H{
-			"error": "failed to update record",
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":   http.StatusBadRequest,
+			"errors": "failed to update record",
 		})
 		return
 	}
@@ -153,14 +160,15 @@ func (s *NewController) UpdateUSer(c *gin.Context) {
 	updatedUser, errFetch := Service.GetUserByID(userId)
 	if errFetch != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "failed to fetch updated record",
+			"code":   http.StatusInternalServerError,
+			"errors": "failed to fetch updated record",
 		})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message": "record has been updated",
-		"data":    updatedUser,
+		"code": http.StatusOK,
+		"data": updatedUser,
 	})
 }
 
@@ -169,8 +177,9 @@ func (s *NewController) DeleteUser(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 
 	if err != nil {
-		c.JSON(404, gin.H{
-			"error": "missing record id",
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":   http.StatusBadRequest,
+			"errors": "missing record id",
 		})
 	}
 	userId := uint(id)
@@ -178,8 +187,9 @@ func (s *NewController) DeleteUser(c *gin.Context) {
 	// Find record by id
 	_, errFetch := Service.GetUserByID(userId)
 	if errFetch != nil {
-		c.JSON(500, gin.H{
-			"error": "record doesn't exist",
+		c.JSON(http.StatusNonAuthoritativeInfo, gin.H{
+			"code":   http.StatusNonAuthoritativeInfo,
+			"errors": "record doesn't exist",
 		})
 		return
 	}
@@ -187,14 +197,16 @@ func (s *NewController) DeleteUser(c *gin.Context) {
 	// Delete record
 	errDelete := Service.DeleteUser(userId)
 	if errDelete != nil {
-		c.JSON(400, gin.H{
-			"error": "failed to delete record",
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":   http.StatusBadRequest,
+			"errors": "failed to delete record",
 		})
 		return
 	}
 
 	// Return
-	c.JSON(200, gin.H{
+	c.JSON(http.StatusOK, gin.H{
+		"code":    http.StatusOK,
 		"message": "record has been deleted",
 	})
 }
