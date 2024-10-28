@@ -61,13 +61,12 @@ func (s *NewAuthController) Logout(c *gin.Context) {
 func (s *NewAuthController) RefreshToken(c *gin.Context) {
 	var req RequestRefreshToken
 	_ = c.BindJSON(&req)
-
 	generateRefreshAuth, err := AuthService.RefreshAuth(req.RefreshToken)
 
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"code":   http.StatusUnauthorized,
-			"errors": "Please authenticate",
+			"errors": err.Error(),
 		})
 		return
 	}

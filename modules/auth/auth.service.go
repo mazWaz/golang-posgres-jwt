@@ -56,11 +56,6 @@ func (s *NewAuthService) RefreshAuth(refreshToken string) (*ResponseAuthToken, e
 		return nil, errors.New("ERROR User not Found")
 	}
 
-	var modelToken ModelToken
-	if err := db.Data.Delete(&modelToken, refreshTokenData.ID); err != nil {
-		return nil, errors.New("ERROR Deleting User")
-	}
-
 	token, tokenErr := TokenService.GenerateToken(userData)
 	if tokenErr != nil {
 		return nil, errors.New("ERROR Generating Token")
