@@ -25,11 +25,10 @@ func (ModelUser) TableName() string {
 }
 
 type RequestQueryUser struct {
-	Username string `json:"username" validate:"min=3,max=32"`
-	Password string `json:"password" validate:"min=8"`
-	Role     string `json:"role" validate:"oneof=SUPERADMIN ADMIN USER"`
-	Limit    uint8  `json:"limit" validate:"gte=0,lte=100"`
-	Page     uint8  `json:"page" validate:"gte=0,lte=100"`
+	Username string `form:"username" validate:"omitempty"`
+	Role     string `form:"role" validate:"omitempty,oneof=SUPERADMIN ADMIN USER"`
+	Limit    uint8  `form:"limit" validate:"omitempty,gte=0,lte=100"`
+	Page     uint8  `form:"page" validate:"omitempty,gte=0,lte=100"`
 }
 
 type RequestCreateUser struct {
@@ -39,7 +38,7 @@ type RequestCreateUser struct {
 }
 
 type RequestUpdateUser struct {
-	Username string `json:"username,omitempty" validate:"min=3,max=32"`
-	Password string `json:"password,omitempty" validate:"min=8"`
-	Role     string `json:"role,omitempty" validate:"oneof=admin use"`
+	Username string `json:"username" validate:"omitempty,min=3,max=32"`
+	Password string `json:"password" validate:"omitempty,min=8"`
+	Role     string `json:"role" validate:"omitempty,oneof=SUPERADMIN ADMIN USER"`
 }
