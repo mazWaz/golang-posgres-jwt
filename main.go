@@ -16,8 +16,8 @@ import (
 var validate *validator.Validate
 
 func main() {
-	cfg := config.LoadConfig()
-	middlewares.InitValidator()
+	config.LoadConfig()
+
 	db.InitDB()
 	defer db.CloseDatabaseConnection(db.Data)
 
@@ -26,6 +26,7 @@ func main() {
 		return
 	}
 
+	middlewares.InitValidator()
 	server := gin.Default()
 
 	server.Use(middlewares.CORSMiddleware())
@@ -33,8 +34,8 @@ func main() {
 	routes.SetupRoutes(server)
 
 	var serve string
-	if cfg.AppPort != "" {
-		serve = "127.0.0.1:" + cfg.AppPort
+	if config.Data.AppPort != "" {
+		serve = "127.0.0.1:" + config.Data.AppPort
 	} else {
 		serve = "127.0.0.1:" + "8080"
 	}
