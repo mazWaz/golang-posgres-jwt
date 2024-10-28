@@ -10,14 +10,18 @@ func Role(allowedRoles ...user.ROLE) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		role, exists := c.Get("role")
 		if !exists {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"code":   http.StatusUnauthorized,
+				"errors": "User not authenticated"})
 			c.Abort()
 			return
 		}
 
 		roleStr, ok := role.(string)
 		if !ok {
-			c.JSON(http.StatusForbidden, gin.H{"error": "Invalid role type"})
+			c.JSON(http.StatusForbidden, gin.H{
+				"code":   http.StatusForbidden,
+				"errors": "Invalid role type"})
 			c.Abort()
 			return
 		}
@@ -31,7 +35,9 @@ func Role(allowedRoles ...user.ROLE) gin.HandlerFunc {
 		}
 
 		if !isAllowed {
-			c.JSON(http.StatusForbidden, gin.H{"error": "Access denied"})
+			c.JSON(http.StatusForbidden, gin.H{
+				"code":   http.StatusForbidden,
+				"errors": "Access denied"})
 			c.Abort()
 			return
 		}

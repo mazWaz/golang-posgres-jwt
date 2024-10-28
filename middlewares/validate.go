@@ -110,7 +110,10 @@ func ValidationMiddleware(queryObj interface{}, bodyObj interface{}) gin.Handler
 			query := reflect.New(reflect.TypeOf(queryObj).Elem()).Interface()
 			if err := c.ShouldBindQuery(query); err == nil {
 				if err := validate.Struct(query); err != nil {
-					c.JSON(http.StatusBadRequest, gin.H{"errors": validationErrors(err)})
+					c.JSON(http.StatusBadRequest, gin.H{
+						"code":   http.StatusBadRequest,
+						"errors": validationErrors(err),
+					})
 					c.Abort()
 					return
 				}
@@ -121,16 +124,37 @@ func ValidationMiddleware(queryObj interface{}, bodyObj interface{}) gin.Handler
 		if bodyObj != nil {
 			body := reflect.New(reflect.TypeOf(bodyObj).Elem()).Interface()
 			if jsonBytes, err := io.ReadAll(c.Request.Body); err == nil {
+				// Check if body is empty
+				if len(bytes.TrimSpace(jsonBytes)) == 0 {
+					c.JSON(http.StatusBadRequest, gin.H{
+						"code":   http.StatusBadRequest,
+						"errors": "Empty body",
+					})
+					c.Abort()
+					return
+				}
+
 				// Reset the request body so that the controller can read it again
-				c.Request.Body = io.NopCloser(io.NopCloser(bytes.NewBuffer(jsonBytes)))
+				c.Request.Body = io.NopCloser(bytes.NewBuffer(jsonBytes))
 
 				// Unmarshal JSON for validation without consuming the body
 				if err := json.Unmarshal(jsonBytes, body); err == nil {
 					if err := validate.Struct(body); err != nil {
-						c.JSON(http.StatusBadRequest, gin.H{"errors": validationErrors(err)})
+						c.JSON(http.StatusBadRequest, gin.H{
+							"code":   http.StatusBadRequest,
+							"errors": validationErrors(err),
+						})
 						c.Abort()
 						return
 					}
+				} else {
+					// If JSON unmarshalling fails, return a specific error
+					c.JSON(http.StatusBadRequest, gin.H{
+						"code":   http.StatusBadRequest,
+						"errors": "Invalid JSON format",
+					})
+					c.Abort()
+					return
 				}
 			}
 		}
