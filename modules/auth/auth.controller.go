@@ -25,8 +25,8 @@ func (s *NewAuthController) Login(c *gin.Context) {
 
 	if tokenErr != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
-			"code":    http.StatusUnauthorized,
-			"message": "Could Not Generate Token",
+			"code":   http.StatusUnauthorized,
+			"errors": "Could Not Generate Token",
 		})
 		return
 	}
@@ -47,13 +47,15 @@ func (s *NewAuthController) Logout(c *gin.Context) {
 
 	if logoutData != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
-			"code":    http.StatusUnauthorized,
-			"message": "Please authenticate",
+			"code":   http.StatusUnauthorized,
+			"errors": "Please authenticate",
 		})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Successfully logged out"})
+	c.JSON(http.StatusOK, gin.H{
+		"code":    http.StatusOK,
+		"message": "Successfully logged out"})
 }
 
 func (s *NewAuthController) RefreshToken(c *gin.Context) {
@@ -64,8 +66,8 @@ func (s *NewAuthController) RefreshToken(c *gin.Context) {
 
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
-			"code":    http.StatusUnauthorized,
-			"message": "Please authenticate",
+			"code":   http.StatusUnauthorized,
+			"errors": "Please authenticate",
 		})
 		return
 	}

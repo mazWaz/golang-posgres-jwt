@@ -14,8 +14,8 @@ func AuthMiddleware() gin.HandlerFunc {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
 			c.JSON(http.StatusUnauthorized, gin.H{
-				"code":    http.StatusUnauthorized,
-				"message": "Authorization header is required",
+				"code":   http.StatusUnauthorized,
+				"errors": "Authorization header is required",
 			})
 			c.Abort()
 			return
@@ -28,8 +28,8 @@ func AuthMiddleware() gin.HandlerFunc {
 		jwtSecret := os.Getenv("JWT_SECRET")
 		if jwtSecret == "" {
 			c.JSON(http.StatusInternalServerError, gin.H{
-				"code":    http.StatusInternalServerError,
-				"message": "JWT secret not configured",
+				"code":   http.StatusInternalServerError,
+				"errors": "JWT secret not configured",
 			})
 			c.Abort()
 			return
@@ -46,8 +46,8 @@ func AuthMiddleware() gin.HandlerFunc {
 
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{
-				"code":    http.StatusUnauthorized,
-				"message": "Failed to parse token: " + err.Error(),
+				"code":   http.StatusUnauthorized,
+				"errors": "Failed to parse token: " + err.Error(),
 			})
 			c.Abort()
 			return
@@ -59,8 +59,8 @@ func AuthMiddleware() gin.HandlerFunc {
 			c.Set("role", claims["role"])
 		} else {
 			c.JSON(http.StatusUnauthorized, gin.H{
-				"code":    http.StatusUnauthorized,
-				"message": "Invalid token claims",
+				"code":   http.StatusUnauthorized,
+				"errors": "Invalid token claims",
 			})
 			c.Abort()
 			return
