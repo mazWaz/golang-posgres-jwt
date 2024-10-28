@@ -2,6 +2,7 @@ package auth
 
 import (
 	"errors"
+	"go-clean/config"
 	"go-clean/db"
 	"go-clean/modules/user"
 	"os"
@@ -13,6 +14,7 @@ import (
 type NewTokenService struct{}
 
 func (s *NewTokenService) VerifyToken(refreshToken string, tokenType TokenType) (*ModelToken, error) {
+
 	token, err := jwt.Parse(refreshToken, func(token *jwt.Token) (interface{}, error) {
 		return []byte(os.Getenv("JWT_SECRET")), nil
 	})
@@ -25,15 +27,13 @@ func (s *NewTokenService) VerifyToken(refreshToken string, tokenType TokenType) 
 	if !ok {
 		return nil, errors.New("INVALID Refresh Token")
 	}
-
-	userId := claims["sub"].(string)
+	userId := claims["sub"]
 
 	var modelToken ModelToken
 	tokenData := db.Data.Where(
 		"token = ? AND "+
-			"userId = ? AND "+
-			"type = ? AND "+
-			"blacklisted = FALSE",
+			"user_id = ? AND "+
+			"type = ?",
 		refreshToken,
 		userId,
 		tokenType).First(&modelToken)
@@ -46,9 +46,9 @@ func (s *NewTokenService) VerifyToken(refreshToken string, tokenType TokenType) 
 }
 
 func (s *NewTokenService) GenerateToken(user *user.ModelUser) (*ResponseAuthToken, error) {
-	accessTokenExpire := time.Now().Add(time.Minute * 15).Unix() // Access token valid for 15 minutes
+	accessTokenExpire := time.Now().Add(time.Minute * time.Duration(config.Data.JwtAccessExpired)).Unix() // Access token valid for 15 minutes
 	accessToken, accessTokenErr := TokenService.GenerateAccessToken(user, accessTokenExpire, Access)
-	refreshTokenExpire := time.Now().Add(time.Hour * 72).Unix() // Refresh token valid for 72 hours
+	refreshTokenExpire := time.Now().Add(time.Hour * 24 * time.Duration(config.Data.JwtRefreshExpired)).Unix() // Refresh token valid for 72 hours
 	refreshToken, refreshTokenErr := TokenService.GenerateRefreshToken(user, refreshTokenExpire, Refresh)
 
 	if accessTokenErr != nil || refreshTokenErr != nil {
