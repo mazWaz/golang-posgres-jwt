@@ -23,6 +23,14 @@ func Paginate(page int, limit int, filters map[string]interface{}, model interfa
 	// Initialize the base query with the provided model
 	query := db.Data.Model(model)
 
+	if limit <= 0 {
+		limit = 10
+	}
+	if page <= 0 {
+		page = 1
+
+	}
+
 	// Apply filters dynamically
 	for key, value := range filters {
 		if value != "" && value != "%%" { // Exclude empty and unmodified LIKE pattern
