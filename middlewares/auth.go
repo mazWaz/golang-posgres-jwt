@@ -2,11 +2,12 @@ package middlewares
 
 import (
 	"fmt"
-	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v5"
 	"net/http"
 	"os"
 	"strings"
+
+	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 func AuthMiddleware() gin.HandlerFunc {
@@ -55,7 +56,7 @@ func AuthMiddleware() gin.HandlerFunc {
 
 		// Validate the token and extract claims
 		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-			c.Set("userID", claims["userID"])
+			c.Set("userID", claims["sub"])
 			c.Set("role", claims["role"])
 		} else {
 			c.JSON(http.StatusUnauthorized, gin.H{

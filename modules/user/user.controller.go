@@ -3,9 +3,10 @@ package user
 import (
 	"errors"
 	"go-clean/utils"
-	"gorm.io/gorm"
 	"net/http"
 	"strconv"
+
+	"gorm.io/gorm"
 
 	"github.com/gin-gonic/gin"
 )
@@ -15,7 +16,37 @@ type NewController struct{}
 // NewAuthController is a constructor for AuthController
 
 func (s *NewController) GetProfile(c *gin.Context) {
+	id, _ := strconv.Atoi(c.Param("id"))
 
+	userData, err := Service.GetUserByID(uint(id))
+
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{
+				"code":   http.StatusNotFound,
+				"errors": "User Not Found",
+			})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":   http.StatusInternalServerError,
+			"errors": "Internal server error",
+		})
+		return
+	}
+
+	if userData == nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"code":   http.StatusNotFound,
+			"errors": "User Not Found",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code": http.StatusOK,
+		"data": userData,
+	})
 }
 
 func (s *NewController) GetUsers(c *gin.Context) {
@@ -87,7 +118,6 @@ func (s *NewController) GetUser(c *gin.Context) {
 		"code": http.StatusOK,
 		"data": userData,
 	})
-
 }
 
 func (s *NewController) CreateUser(c *gin.Context) {
