@@ -3,9 +3,11 @@ package middlewares
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"reflect"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/locales/en"
@@ -19,71 +21,37 @@ var (
 	trans    ut.Translator
 )
 
-// InitValidator initializes the validator instance and custom translations
+type Validator struct {
+	Param interface{}
+	Query interface{}
+	Body  interface{}
+}
+
+// InitValidator initializes the validator and sets up custom translations
 func InitValidator() {
 	validate = validator.New()
 	enLocale := en.New()
 	uni := ut.New(enLocale, enLocale)
+	var err error
 	trans, _ = uni.GetTranslator("en")
 
-	err := entranslations.RegisterDefaultTranslations(validate, trans)
+	err = entranslations.RegisterDefaultTranslations(validate, trans)
 	if err != nil {
 		return
 	}
 
-	// Register custom translations
-	err = validate.RegisterTranslation("required", trans, func(ut ut.Translator) error {
-		return ut.Add("required", "{0} is a required field", true)
-	}, func(ut ut.Translator, fe validator.FieldError) string {
-		field, _ := ut.T(fe.Tag(), fe.Field())
-		return field
-	})
-	if err != nil {
-		return
-	}
+	// Register custom translations for various tags
+	registerCustomTranslations("required", "{0} is a required field")
+	registerCustomTranslations("email", "{0} must be a valid email address")
+	registerCustomTranslations("min", "{0} must be at least {1} characters")
+	registerCustomTranslations("max", "{0} cannot exceed {1} characters")
+	registerCustomTranslations("gte", "{0} must be greater than or equal to {1}")
+	registerCustomTranslations("lte", "{0} must be less than or equal to {1}")
+}
 
-	err = validate.RegisterTranslation("email", trans, func(ut ut.Translator) error {
-		return ut.Add("email", "{0} must be a valid email address", true)
-	}, func(ut ut.Translator, fe validator.FieldError) string {
-		field, _ := ut.T(fe.Tag(), fe.Field())
-		return field
-	})
-	if err != nil {
-		return
-	}
-
-	err = validate.RegisterTranslation("min", trans, func(ut ut.Translator) error {
-		return ut.Add("min", "{0} must be at least {1} characters", true)
-	}, func(ut ut.Translator, fe validator.FieldError) string {
-		field, _ := ut.T(fe.Tag(), fe.Field(), fe.Param())
-		return field
-	})
-	if err != nil {
-		return
-	}
-
-	err = validate.RegisterTranslation("max", trans, func(ut ut.Translator) error {
-		return ut.Add("max", "{0} cannot exceed {1} characters", true)
-	}, func(ut ut.Translator, fe validator.FieldError) string {
-		field, _ := ut.T(fe.Tag(), fe.Field(), fe.Param())
-		return field
-	})
-	if err != nil {
-		return
-	}
-
-	err = validate.RegisterTranslation("gte", trans, func(ut ut.Translator) error {
-		return ut.Add("gte", "{0} must be greater than or equal to {1}", true)
-	}, func(ut ut.Translator, fe validator.FieldError) string {
-		field, _ := ut.T(fe.Tag(), fe.Field(), fe.Param())
-		return field
-	})
-	if err != nil {
-		return
-	}
-
-	err = validate.RegisterTranslation("lte", trans, func(ut ut.Translator) error {
-		return ut.Add("lte", "{0} must be less than or equal to {1}", true)
+func registerCustomTranslations(tag, message string) {
+	err := validate.RegisterTranslation(tag, trans, func(ut ut.Translator) error {
+		return ut.Add(tag, message, true)
 	}, func(ut ut.Translator, fe validator.FieldError) string {
 		field, _ := ut.T(fe.Tag(), fe.Field(), fe.Param())
 		return field
@@ -93,21 +61,43 @@ func InitValidator() {
 	}
 }
 
-// Convert validation errors to custom messages
 func validationErrors(err error) gin.H {
 	errors := gin.H{}
 	for _, err := range err.(validator.ValidationErrors) {
 		errors[err.Field()] = err.Translate(trans)
 	}
 	return errors
+
 }
 
-// ValidationMiddleware Middleware to validate query and body, allowing nil values
-func ValidationMiddleware(queryObj interface{}, bodyObj interface{}) gin.HandlerFunc {
+func getStructFields(obj interface{}) map[string]struct{} {
+	fields := make(map[string]struct{})
+	val := reflect.ValueOf(obj).Elem()
+	typ := val.Type()
+
+	for i := 0; i < typ.NumField(); i++ {
+		jsonTag := typ.Field(i).Tag.Get("json")
+		if jsonTag != "" {
+			// Handle tags like `json:"username,omitempty"`
+			tagParts := strings.Split(jsonTag, ",")
+			fieldName := tagParts[0]
+			if fieldName != "-" && fieldName != "" {
+				fields[fieldName] = struct{}{}
+			}
+		} else {
+			// If no JSON tag, use the field name in lowercase
+			fieldName := strings.ToLower(typ.Field(i).Name)
+			fields[fieldName] = struct{}{}
+		}
+	}
+
+	return fields
+}
+
+func ValidationMiddleware(v Validator) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Validate query parameters if queryObj is provided
-		if queryObj != nil {
-			query := reflect.New(reflect.TypeOf(queryObj).Elem()).Interface()
+		if v.Query != nil {
+			query := reflect.New(reflect.TypeOf(v.Query).Elem()).Interface()
 			if err := c.ShouldBindQuery(query); err == nil {
 				if err := validate.Struct(query); err != nil {
 					c.JSON(http.StatusBadRequest, gin.H{
@@ -120,11 +110,9 @@ func ValidationMiddleware(queryObj interface{}, bodyObj interface{}) gin.Handler
 			}
 		}
 
-		// Validate JSON body without binding it in Gin
-		if bodyObj != nil {
-			body := reflect.New(reflect.TypeOf(bodyObj).Elem()).Interface()
+		if v.Body != nil {
+			body := reflect.New(reflect.TypeOf(v.Body).Elem()).Interface()
 			if jsonBytes, err := io.ReadAll(c.Request.Body); err == nil {
-				// Check if body is empty
 				if len(bytes.TrimSpace(jsonBytes)) == 0 {
 					c.JSON(http.StatusBadRequest, gin.H{
 						"code":   http.StatusBadRequest,
@@ -134,21 +122,10 @@ func ValidationMiddleware(queryObj interface{}, bodyObj interface{}) gin.Handler
 					return
 				}
 
-				// Reset the request body so that the controller can read it again
 				c.Request.Body = io.NopCloser(bytes.NewBuffer(jsonBytes))
 
-				// Unmarshal JSON for validation without consuming the body
-				if err := json.Unmarshal(jsonBytes, body); err == nil {
-					if err := validate.Struct(body); err != nil {
-						c.JSON(http.StatusBadRequest, gin.H{
-							"code":   http.StatusBadRequest,
-							"errors": validationErrors(err),
-						})
-						c.Abort()
-						return
-					}
-				} else {
-					// If JSON unmarshalling fails, return a specific error
+				var payloadMap map[string]interface{}
+				if err := json.Unmarshal(jsonBytes, &payloadMap); err != nil {
 					c.JSON(http.StatusBadRequest, gin.H{
 						"code":   http.StatusBadRequest,
 						"errors": "Invalid JSON format",
@@ -156,6 +133,50 @@ func ValidationMiddleware(queryObj interface{}, bodyObj interface{}) gin.Handler
 					c.Abort()
 					return
 				}
+
+				// Get the known fields from the struct
+				knownFields := getStructFields(v.Body)
+
+				var unknownFields []string
+				for key := range payloadMap {
+					if _, exists := knownFields[key]; !exists {
+						unknownFields = append(unknownFields, key)
+					}
+				}
+
+				if err := json.Unmarshal(jsonBytes, body); err != nil {
+					c.JSON(http.StatusBadRequest, gin.H{
+						"code":   http.StatusBadRequest,
+						"errors": "Invalid JSON structure",
+					})
+					c.Abort()
+					return
+				}
+
+				if err := validate.Struct(body); err != nil {
+					c.JSON(http.StatusBadRequest, gin.H{
+						"code":   http.StatusBadRequest,
+						"errors": validationErrors(err),
+					})
+					c.Abort()
+					return
+				}
+
+				if len(unknownFields) > 0 {
+					c.JSON(http.StatusBadRequest, gin.H{
+						"code":   http.StatusBadRequest,
+						"errors": fmt.Sprintf("Unknown or invalid JSON field(s): %s", strings.Join(unknownFields, ", ")),
+					})
+					c.Abort()
+					return
+				}
+			} else {
+				c.JSON(http.StatusBadRequest, gin.H{
+					"code":   http.StatusBadRequest,
+					"errors": "Unable to read request body",
+				})
+				c.Abort()
+				return
 			}
 		}
 

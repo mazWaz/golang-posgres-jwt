@@ -20,7 +20,7 @@ func (s *NewUserRoutes) Init(router *gin.Engine) {
 
 		userRoutes.GET("/",
 			middlewares.Role(user.SUPERADMIN),
-			middlewares.ValidationMiddleware(&user.RequestQueryUser{}, nil),
+			middlewares.ValidationMiddleware(user.ValidateQueryUser),
 			user.Controller.GetUsers)
 
 		userRoutes.GET("/:id",
@@ -29,16 +29,17 @@ func (s *NewUserRoutes) Init(router *gin.Engine) {
 
 		userRoutes.POST("/",
 			middlewares.Role(user.SUPERADMIN),
-			middlewares.ValidationMiddleware(nil, &user.RequestCreateUser{}),
+			middlewares.ValidationMiddleware(user.ValidateCreateUser),
 			user.Controller.CreateUser)
 
 		userRoutes.PATCH("/:id",
 			middlewares.Role(user.SUPERADMIN),
-			middlewares.ValidationMiddleware(nil, &user.RequestUpdateUser{}),
+			middlewares.ValidationMiddleware(user.ValidateUpdateUser),
 			user.Controller.UpdateUSer)
 
 		userRoutes.DELETE("/:id",
 			middlewares.Role(user.SUPERADMIN),
+			middlewares.ValidationMiddleware(user.ValidateDeleteUser),
 			user.Controller.DeleteUser)
 	}
 }

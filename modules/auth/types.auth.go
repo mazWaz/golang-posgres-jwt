@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"go-clean/middlewares"
 	"go-clean/modules/user"
 	"time"
 
@@ -29,6 +30,13 @@ type ModelToken struct {
 
 func (ModelToken) TableName() string {
 	return "tokens"
+}
+
+var ValidateLogin = middlewares.Validator{
+	Body: &RequestLogin{},
+}
+var ValidateRefreshToken = middlewares.Validator{
+	Body: &RequestRefreshToken{},
 }
 
 type RequestLogin struct {
