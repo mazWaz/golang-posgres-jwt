@@ -15,30 +15,30 @@ func (s *NewUserRoutes) Init(router *gin.Engine) {
 	userRoutes.Use(middlewares.AuthMiddleware())
 	{
 		userRoutes.GET("/profile",
-			middlewares.Role(user.SUPERADMIN, user.ADMIN, user.USER),
+			middlewares.Role(middlewares.SUPERADMIN, middlewares.ADMIN, middlewares.USER),
 			user.Controller.GetProfile)
 
 		userRoutes.GET("/",
-			middlewares.Role(user.SUPERADMIN),
+			middlewares.Role(middlewares.SUPERADMIN),
 			middlewares.ValidationMiddleware(user.ValidateQueryUser),
 			user.Controller.GetUsers)
 
 		userRoutes.GET("/:id",
-			middlewares.Role(user.SUPERADMIN),
+			middlewares.Role(middlewares.SUPERADMIN),
 			user.Controller.GetUser)
 
 		userRoutes.POST("/",
-			middlewares.Role(user.SUPERADMIN),
+			middlewares.Role(middlewares.SUPERADMIN),
 			middlewares.ValidationMiddleware(user.ValidateCreateUser),
 			user.Controller.CreateUser)
 
 		userRoutes.PATCH("/:id",
-			middlewares.Role(user.SUPERADMIN),
+			middlewares.Role(middlewares.SUPERADMIN),
 			middlewares.ValidationMiddleware(user.ValidateUpdateUser),
 			user.Controller.UpdateUSer)
 
 		userRoutes.DELETE("/:id",
-			middlewares.Role(user.SUPERADMIN),
+			middlewares.Role(middlewares.SUPERADMIN),
 			middlewares.ValidationMiddleware(user.ValidateDeleteUser),
 			user.Controller.DeleteUser)
 	}

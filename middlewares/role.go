@@ -1,12 +1,20 @@
 package middlewares
 
 import (
-	"github.com/gin-gonic/gin"
-	"go-clean/modules/user"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
-func Role(allowedRoles ...user.ROLE) gin.HandlerFunc {
+type ROLE string
+
+const (
+	SUPERADMIN ROLE = "SUPERADMIN"
+	ADMIN      ROLE = "ADMIN"
+	USER       ROLE = "USER"
+)
+
+func Role(allowedRoles ...ROLE) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		role, exists := c.Get("role")
 		if !exists {

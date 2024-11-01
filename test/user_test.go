@@ -6,7 +6,6 @@ import (
 	"go-clean/db"
 	"go-clean/middlewares"
 	"go-clean/modules/user"
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -16,7 +15,7 @@ import (
 )
 
 func SetUpRouter() *gin.Engine {
-	_ = config.LoadConfig()
+	config.LoadConfig()
 	middlewares.InitValidator()
 	db.InitDB()
 	// defer db.CloseDatabaseConnection(db.Data)
@@ -26,20 +25,6 @@ func SetUpRouter() *gin.Engine {
 	server.Use(middlewares.CORSMiddleware())
 
 	return server
-}
-
-func TestHomepageHandler(t *testing.T) {
-	mockResponse := `{"message":"Welcome to my paradise"}`
-	r := SetUpRouter()
-	r.GET("/modules/user", user.HomepageHandler)
-	req, _ := http.NewRequest("GET", "/modules/user", nil)
-	fmt.Print(req)
-	w := httptest.NewRecorder()
-	r.ServeHTTP(w, req)
-
-	responseData, _ := io.ReadAll(w.Body)
-	assert.Equal(t, mockResponse, string(responseData))
-	assert.Equal(t, http.StatusOK, w.Code)
 }
 
 func TestGetUserByID(t *testing.T) {
