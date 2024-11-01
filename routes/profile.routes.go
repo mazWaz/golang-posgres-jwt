@@ -17,31 +17,32 @@ func (s *NewAddressRoutes) Init(router *gin.Engine) {
 	{
 		addressRoutes.GET("/profile",
 			middlewares.AuthMiddleware(),
-			middlewares.Role(user.SUPERADMIN, user.ADMIN, user.USER),
+			middlewares.Role(middlewares.SUPERADMIN, middlewares.ADMIN, middlewares.USER),
 			user.Controller.GetProfile)
 
 		addressRoutes.GET("/",
-			middlewares.Role(user.SUPERADMIN, user.ADMIN, user.USER),
-			middlewares.ValidationMiddleware(&user.RequestQueryUser{}, nil),
+			middlewares.Role(middlewares.SUPERADMIN, middlewares.ADMIN, middlewares.USER),
+			middlewares.ValidationMiddleware(profile.ValidateQueryAddress),
 			profile.Controller.GetProfile)
 
 		addressRoutes.GET("/:id",
 			middlewares.AuthMiddleware(),
-			middlewares.Role(user.SUPERADMIN, user.ADMIN, user.USER),
+			middlewares.Role(middlewares.SUPERADMIN, middlewares.ADMIN, middlewares.USER),
 			profile.Controller.GetProfile)
 
 		addressRoutes.POST("/",
-			middlewares.Role(user.SUPERADMIN, user.ADMIN, user.USER),
-			middlewares.ValidationMiddleware(nil, &profile.RequestCreateAddress{}),
+			middlewares.Role(middlewares.SUPERADMIN, middlewares.ADMIN, middlewares.USER),
+			middlewares.ValidationMiddleware(profile.ValidateCreateAddress),
 			profile.Controller.CreateAddress)
 
 		addressRoutes.PATCH("/:id",
-			middlewares.Role(user.SUPERADMIN, user.ADMIN, user.USER),
-			middlewares.ValidationMiddleware(nil, &user.RequestUpdateUser{}),
+			middlewares.Role(middlewares.SUPERADMIN, middlewares.ADMIN, middlewares.USER),
+			middlewares.ValidationMiddleware(profile.ValidateUpdateAddress),
 			profile.Controller.UpdateAddress)
 
 		addressRoutes.DELETE("/:id",
-			middlewares.Role(user.SUPERADMIN, user.ADMIN, user.USER),
+			middlewares.Role(middlewares.SUPERADMIN, middlewares.ADMIN, middlewares.USER),
+			middlewares.ValidationMiddleware(profile.ValidateDeleteAddress),
 			profile.Controller.DeleteAddress)
 	}
 }

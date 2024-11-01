@@ -32,6 +32,13 @@ type RequestUpdateAddress struct {
 	Province string `json:"province" validate:"omitempty,min=2"`
 }
 
+type RequestQueryAddress struct {
+	Username string `form:"username" validate:"omitempty"`
+	Role     string `form:"role" validate:"omitempty,oneof=SUPERADMIN ADMIN USER"`
+	Limit    int    `form:"limit" validate:"gte=1,omitempty,lte=100"`
+	Page     int    `form:"page" validate:"gte=1,omitempty,lte=100"`
+}
+
 func (ModelAddress) TableName() string {
 	return "user_address"
 }
