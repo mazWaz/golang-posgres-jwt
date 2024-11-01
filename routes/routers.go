@@ -7,4 +7,5 @@ import (
 func SetupRoutes(r *gin.Engine) {
 	AuthRoutes.init(r)
 	UserRoute.Init(r)
+	AddressRoute.Init(r)
 }

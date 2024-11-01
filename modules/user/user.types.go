@@ -21,6 +21,22 @@ type ModelUser struct {
 	Role     ROLE   `gorm:"type:role_type;not null"`
 }
 
+type ModelUserAddress struct {
+	gorm.Model
+	ID       uint   `gorm:"primaryKey;autoIncrement"`
+	UserID   uint   `gorm:"not null" json:"user_id"`
+	Address  string `gorm:"not null" json:"address"`
+	RT       string `gorm:"not null" json:"-"`
+	RW       string `gorm:"not null" json:"-"`
+	District string `gorm:"not null" json:"-"`
+	City     string `gorm:"not null" json:"-"`
+	Province string `gorm:"not null" json:"-"`
+}
+
+func (ModelUserAddress) TableName() string {
+	return "user_address"
+}
+
 func (ModelUser) TableName() string {
 	return "users"
 }
