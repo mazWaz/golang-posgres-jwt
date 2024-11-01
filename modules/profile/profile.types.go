@@ -7,8 +7,8 @@ type ModelAddress struct {
 	ID       uint   `gorm:"primaryKey;autoIncrement"`
 	UserID   uint   `gorm:"not null" json:"user_id"`
 	Address  string `gorm:"not null" json:"address"`
-	RT       string `gorm:"not null" json:"rt"`
-	RW       string `gorm:"not null" json:"rw"`
+	RT       int    `gorm:"not null" json:"rt"`
+	RW       int    `gorm:"not null" json:"rw"`
 	District string `gorm:"not null" json:"district"`
 	City     string `gorm:"not null" json:"city"`
 	Province string `gorm:"not null" json:"province"`
@@ -16,8 +16,8 @@ type ModelAddress struct {
 
 type RequestCreateAddress struct {
 	Address  string `json:"address" validate:"required,min=3"`
-	RT       string `json:"rt" validate:"required,gte=0"`
-	RW       string `json:"rw" validate:"required,gte=0"`
+	RT       int    `json:"rt" validate:"required,gte=0"`
+	RW       int    `json:"rw" validate:"required,gte=0"`
 	District string `json:"district" validate:"required,min=2"`
 	City     string `json:"city" validate:"required,min=2"`
 	Province string `json:"province" validate:"required,min=2"`
@@ -25,8 +25,8 @@ type RequestCreateAddress struct {
 
 type RequestUpdateAddress struct {
 	Address  string `json:"address" validate:"omitempty,min=3"`
-	RT       string `json:"rt" validate:"omitempty,min=2"`
-	RW       string `json:"rw" validate:"omitempty,min=2"`
+	RT       int    `json:"rt" validate:"omitempty,min=2"`
+	RW       int    `json:"rw" validate:"omitempty,min=2"`
 	District string `json:"district" validate:"omitempty,min=2"`
 	City     string `json:"city" validate:"omitempty,min=2"`
 	Province string `json:"province" validate:"omitempty,min=2"`

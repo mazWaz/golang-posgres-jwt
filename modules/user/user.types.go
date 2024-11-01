@@ -10,24 +10,9 @@ type ModelUser struct {
 	gorm.Model
 	ID       uint             `gorm:"primaryKey;autoIncrement"`
 	Username string           `gorm:"uniqueIndex;not null" json:"username"`
+	Email    string           `gorm:"not null" json:"email"`
 	Password string           `gorm:"not null" json:"-"`
 	Role     middlewares.ROLE `gorm:"type:role_type;not null"`
-}
-
-type ModelUserAddress struct {
-	gorm.Model
-	ID       uint   `gorm:"primaryKey;autoIncrement"`
-	UserID   uint   `gorm:"not null" json:"user_id"`
-	Address  string `gorm:"not null" json:"address"`
-	RT       string `gorm:"not null" json:"-"`
-	RW       string `gorm:"not null" json:"-"`
-	District string `gorm:"not null" json:"-"`
-	City     string `gorm:"not null" json:"-"`
-	Province string `gorm:"not null" json:"-"`
-}
-
-func (ModelUserAddress) TableName() string {
-	return "user_address"
 }
 
 func (ModelUser) TableName() string {
@@ -41,10 +26,16 @@ type RequestQueryUser struct {
 	Page     int    `form:"page" validate:"gte=1,omitempty,lte=100"`
 }
 
-type RequestCreateUser struct {
-	Username string           `json:"username" validate:"required,min=3,max=32"`
+type RequestCreateUserAdmin struct {
+	Username string           `json:"username" validate:"required"`
 	Password string           `json:"password" validate:"required,min=8"`
+	Email    string           `json:"email" validate:"required,email,min=8"`
 	Role     middlewares.ROLE `json:"role" validate:"oneof=SUPERADMIN ADMIN USER"`
+}
+
+type RequestCreateUser struct {
+	Email string           `json:"email" validate:"required,email,min=8"`
+	Role  middlewares.ROLE `json:"role" validate:"oneof=SUPERADMIN ADMIN USER"`
 }
 
 type RequestUpdateUser struct {

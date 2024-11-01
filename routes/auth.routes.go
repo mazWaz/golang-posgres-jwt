@@ -12,6 +12,9 @@ type NewAuthRoutes struct{}
 func (s *NewAuthRoutes) init(router *gin.Engine) {
 	publicRoutes := router.Group("/api")
 	{
+		publicRoutes.POST("/login/admin",
+			middlewares.ValidationMiddleware(auth.ValidateLoginEmail),
+			auth.Controller.LoginEmail)
 		publicRoutes.POST("/login",
 			middlewares.ValidationMiddleware(auth.ValidateLogin),
 			auth.Controller.Login)

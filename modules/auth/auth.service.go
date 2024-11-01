@@ -9,6 +9,21 @@ import (
 
 type NewAuthService struct{}
 
+func (s *NewAuthService) LoginWithUsernameAndEmail(credential string, password string) (*user.ModelUser, error) {
+
+	userData, err := user.Service.GetUserByUsernameOrEmail(credential)
+	if err != nil || userData == nil {
+		return nil, errors.New("invalid Username or Email")
+	}
+
+	hashErr := utils.ComparePassword(password, userData.Password)
+	if !hashErr {
+		return nil, errors.New("invalid Username or Password")
+	}
+
+	return userData, nil
+}
+
 func (s *NewAuthService) LoginWithUsernameAndPassword(username string, password string) (*user.ModelUser, error) {
 
 	userData, err := user.Service.GetUserByUsername(username)

@@ -7,6 +7,16 @@ import (
 
 type NewUserService struct{}
 
+func (s *NewUserService) GetUserByUsernameOrEmail(credential string) (*ModelUser, error) {
+	var user ModelUser
+
+	if err := db.Data.Where("username = ?", credential).Or("email = ?", credential).Find(&user).Error; err != nil {
+		return nil, utils.SanitizeDBError(err)
+	}
+
+	return &user, nil
+}
+
 func (s *NewUserService) GetUserByUsername(username string) (*ModelUser, error) {
 	var user ModelUser
 

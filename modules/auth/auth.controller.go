@@ -8,6 +8,38 @@ import (
 
 type NewAuthController struct{}
 
+func (s *NewAuthController) LoginEmail(c *gin.Context) {
+	var req RequestLoginEmail
+	_ = c.BindJSON(&req)
+
+	userData, errCredential := AuthService.LoginWithUsernameAndEmail(req.Credential, req.Password)
+
+	if errCredential != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"code":  http.StatusUnauthorized,
+			"error": errCredential.Error()})
+		return
+	}
+
+	token, tokenErr := TokenService.GenerateToken(userData)
+
+	if tokenErr != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"code":   http.StatusUnauthorized,
+			"errors": "Could Not Generate Token",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code": http.StatusOK,
+		"data": gin.H{
+			"user":  userData,
+			"token": token,
+		},
+	})
+}
+
 func (s *NewAuthController) Login(c *gin.Context) {
 	var req RequestLogin
 	_ = c.BindJSON(&req)
