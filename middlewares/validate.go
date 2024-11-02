@@ -96,9 +96,64 @@ func getStructFields(obj interface{}) map[string]struct{} {
 
 func ValidationMiddleware(v Validator) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		if v.Param != nil {
+			param := reflect.New(reflect.TypeOf(v.Param).Elem()).Interface()
+			if err := c.ShouldBindUri(param); err == nil {
+				// Langsung validasi struct tanpa parsing JSON
+				if err := validate.Struct(param); err != nil {
+					c.JSON(http.StatusBadRequest, gin.H{
+						"code":   http.StatusBadRequest,
+						"errors": validationErrors(err),
+					})
+					c.Abort()
+					return
+				}
+			} else {
+				c.JSON(http.StatusBadRequest, gin.H{
+					"code":   http.StatusBadRequest,
+					"errors": "Invalid URI parameters",
+				})
+				c.Abort()
+				return
+			}
+		}
+
 		if v.Query != nil {
 			query := reflect.New(reflect.TypeOf(v.Query).Elem()).Interface()
 			if err := c.ShouldBindQuery(query); err == nil {
+				// Convert query parameters to JSON format
+				jsonBytes, err := json.Marshal(c.Request.URL.Query())
+				if err != nil {
+					c.JSON(http.StatusBadRequest, gin.H{
+						"code":   http.StatusBadRequest,
+						"errors": "Unable to parse query parameters",
+					})
+					c.Abort()
+					return
+				}
+
+				// Parse JSON query data to payloadMap
+				var payloadMap map[string]interface{}
+				if err := json.Unmarshal(jsonBytes, &payloadMap); err != nil {
+					c.JSON(http.StatusBadRequest, gin.H{
+						"code":   http.StatusBadRequest,
+						"errors": "Invalid query format",
+					})
+					c.Abort()
+					return
+				}
+
+				// Get the known fields from the struct
+				knownFields := getStructFields(v.Query)
+
+				var unknownFields []string
+				for key := range payloadMap {
+					if _, exists := knownFields[key]; !exists {
+						unknownFields = append(unknownFields, key)
+					}
+				}
+
+				// Validate query structure
 				if err := validate.Struct(query); err != nil {
 					c.JSON(http.StatusBadRequest, gin.H{
 						"code":   http.StatusBadRequest,
@@ -107,6 +162,23 @@ func ValidationMiddleware(v Validator) gin.HandlerFunc {
 					c.Abort()
 					return
 				}
+
+				// Check for unknown fields
+				if len(unknownFields) > 0 {
+					c.JSON(http.StatusBadRequest, gin.H{
+						"code":   http.StatusBadRequest,
+						"errors": fmt.Sprintf("Unknown or invalid query parameter(s): %s", strings.Join(unknownFields, ", ")),
+					})
+					c.Abort()
+					return
+				}
+			} else {
+				c.JSON(http.StatusBadRequest, gin.H{
+					"code":   http.StatusBadRequest,
+					"errors": "Invalid query parameters",
+				})
+				c.Abort()
+				return
 			}
 		}
 
