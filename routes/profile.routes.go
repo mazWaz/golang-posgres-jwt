@@ -3,7 +3,6 @@ package routes
 import (
 	"go-clean/middlewares"
 	"go-clean/modules/profile"
-	"go-clean/modules/user"
 
 	"github.com/gin-gonic/gin"
 )
@@ -18,7 +17,7 @@ func (s *NewAddressRoutes) Init(router *gin.Engine) {
 		addressRoutes.GET("/profile",
 			middlewares.AuthMiddleware(),
 			middlewares.Role(middlewares.SUPERADMIN, middlewares.ADMIN, middlewares.USER),
-			user.Controller.GetProfile)
+			profile.Controller.GetProfile)
 
 		addressRoutes.GET("/",
 			middlewares.Role(middlewares.SUPERADMIN, middlewares.ADMIN, middlewares.USER),

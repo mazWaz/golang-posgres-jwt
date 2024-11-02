@@ -28,8 +28,8 @@ func (s *NewAddressService) CreateAddress(address RequestCreateAddress, id float
 
 	addressData.UserID = uint(id)
 	addressData.Address = address.Address
-	addressData.RT = address.RT
-	addressData.RW = address.RW
+	addressData.RT = int(address.RT)
+	addressData.RW = int(address.RW)
 	addressData.District = address.District
 	addressData.City = address.City
 	addressData.Province = address.Province

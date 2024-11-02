@@ -15,40 +15,6 @@ type NewController struct{}
 
 // NewAuthController is a constructor for AuthController
 
-func (s *NewController) GetProfile(c *gin.Context) {
-	id, _ := strconv.Atoi(c.Param("id"))
-
-	userData, err := Service.GetUserByID(uint(id))
-
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(http.StatusNotFound, gin.H{
-				"code":   http.StatusNotFound,
-				"errors": "User Not Found",
-			})
-			return
-		}
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"code":   http.StatusInternalServerError,
-			"errors": "Internal server error",
-		})
-		return
-	}
-
-	if userData == nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"code":   http.StatusNotFound,
-			"errors": "User Not Found",
-		})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"code": http.StatusOK,
-		"data": userData,
-	})
-}
-
 func (s *NewController) GetUsers(c *gin.Context) {
 
 	var query RequestQueryUser
@@ -120,9 +86,9 @@ func (s *NewController) GetUser(c *gin.Context) {
 	})
 }
 
-func (s *NewController) CreateUser(c *gin.Context) {
+func (s *NewController) CreateUserAdmin(c *gin.Context) {
 	// Get form data
-	var req RequestCreateUser
+	var req RequestCreateUserAdmin
 
 	_ = c.BindJSON(&req)
 
@@ -138,6 +104,7 @@ func (s *NewController) CreateUser(c *gin.Context) {
 	// Assign form data JSON to struct
 	var userData ModelUser
 	userData.Username = req.Username
+	userData.Email = req.Email
 	userData.Password = string(hashedPassword)
 	userData.Role = req.Role
 
@@ -247,6 +214,35 @@ func (s *NewController) DeleteUser(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"code":    http.StatusOK,
 		"message": "record has been deleted",
+	})
+}
+
+func (s *NewController) CreateUser(c *gin.Context) {
+	// Get form data
+	var req RequestCreateUser
+
+	_ = c.BindJSON(&req)
+
+	// Assign form data JSON to struct
+	var userData ModelUser
+	userData.Email = req.Email
+	userData.Role = req.Role
+
+	// Insert Data
+	errCreate := Service.CreateUser(&userData)
+
+	if errCreate != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":   http.StatusBadRequest,
+			"errors": errCreate.Error(),
+		})
+		return
+	}
+
+	// Return data
+	c.JSON(http.StatusOK, gin.H{
+		"code": http.StatusOK,
+		"data": userData,
 	})
 }
 

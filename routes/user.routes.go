@@ -14,10 +14,6 @@ func (s *NewUserRoutes) Init(router *gin.Engine) {
 	userRoutes := router.Group("/api/user")
 	userRoutes.Use(middlewares.AuthMiddleware())
 	{
-		userRoutes.GET("/profile",
-			middlewares.Role(middlewares.SUPERADMIN, middlewares.ADMIN, middlewares.USER),
-			user.Controller.GetProfile)
-
 		userRoutes.GET("/",
 			middlewares.Role(middlewares.SUPERADMIN),
 			middlewares.ValidationMiddleware(user.ValidateQueryUser),
@@ -27,10 +23,10 @@ func (s *NewUserRoutes) Init(router *gin.Engine) {
 			middlewares.Role(middlewares.SUPERADMIN),
 			user.Controller.GetUser)
 
-		userRoutes.POST("/",
+		userRoutes.POST("/admin/",
 			middlewares.Role(middlewares.SUPERADMIN),
-			middlewares.ValidationMiddleware(user.ValidateCreateUser),
-			user.Controller.CreateUser)
+			middlewares.ValidationMiddleware(user.ValidateCreateUserAdmin),
+			user.Controller.CreateUserAdmin)
 
 		userRoutes.PATCH("/:id",
 			middlewares.Role(middlewares.SUPERADMIN),
@@ -41,6 +37,11 @@ func (s *NewUserRoutes) Init(router *gin.Engine) {
 			middlewares.Role(middlewares.SUPERADMIN),
 			middlewares.ValidationMiddleware(user.ValidateDeleteUser),
 			user.Controller.DeleteUser)
+
+		userRoutes.POST("/",
+			middlewares.Role(middlewares.SUPERADMIN),
+			middlewares.ValidationMiddleware(user.ValidateCreateUser),
+			user.Controller.CreateUser)
 	}
 }
 
