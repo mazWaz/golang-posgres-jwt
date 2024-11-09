@@ -3,6 +3,7 @@ package migrations
 import (
 	"go-clean/modules/auth"
 	"go-clean/modules/user"
+
 	"gorm.io/gorm"
 )
 

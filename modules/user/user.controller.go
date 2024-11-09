@@ -17,7 +17,7 @@ type NewController struct{}
 
 func (s *NewController) GetUsers(c *gin.Context) {
 
-	var query RequestQueryUser
+	var query RequestQueryUserByAdmin
 	_ = c.Bind(&query)
 
 	filters := map[string]interface{}{
@@ -86,30 +86,16 @@ func (s *NewController) GetUser(c *gin.Context) {
 	})
 }
 
-func (s *NewController) CreateUserAdmin(c *gin.Context) {
+func (s *NewController) CreateUser(c *gin.Context) {
 	// Get form data
-	var req RequestCreateUserAdmin
+	role, _ := c.Get("role")
+	userRole, _ := role.(string)
 
-	_ = c.BindJSON(&req)
-
-	hashedPassword, err := utils.HashPassword([]byte(req.Password))
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":   http.StatusBadRequest,
-			"errors": "failed to generate password",
-		})
-		return
-	}
-
-	// Assign form data JSON to struct
-	var userData ModelUser
-	userData.Username = req.Username
-	userData.Email = req.Email
-	userData.Password = string(hashedPassword)
-	userData.Role = req.Role
+	var userData RequestCreateUser
+	_ = c.BindJSON(&userData)
 
 	// Insert Data
-	errCreate := Service.CreateUser(&userData)
+	createdUser, errCreate := Service.CreateUser(userRole, &userData)
 
 	if errCreate != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -122,52 +108,27 @@ func (s *NewController) CreateUserAdmin(c *gin.Context) {
 	// Return data
 	c.JSON(http.StatusOK, gin.H{
 		"code": http.StatusOK,
-		"data": userData,
+		"data": createdUser,
 	})
 }
 
-func (s *NewController) UpdateUSer(c *gin.Context) {
+func (s *NewController) UpdateUser(c *gin.Context) {
 	// Get record id
-	id, errId := strconv.Atoi(c.Param("id"))
-
-	if errId != nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"code":   http.StatusNotFound,
-			"errors": "missing record id",
-		})
-		return
-	}
+	id, _ := strconv.Atoi(c.Param("id"))
+	role, _ := c.Get("role")
+	userRole, _ := role.(string)
 
 	// Get form data
 	var req RequestUpdateUser
-	err := c.BindJSON(&req)
-
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":   http.StatusBadRequest,
-			"errors": "cannot get form data",
-		})
-		return
-	}
 	userId := uint(id)
+	_ = c.BindJSON(&req)
 
-	// Update data to db
-	errUpdate := Service.UpdateUser(userId, req)
+	updatedUser, errUpdate := Service.UpdateUser(userRole, userId, &req)
 
 	if errUpdate != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":   http.StatusBadRequest,
-			"errors": "failed to update record",
-		})
-		return
-	}
-
-	// Get updated data in JSON
-	updatedUser, errFetch := Service.GetUserByID(userId)
-	if errFetch != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"code":   http.StatusInternalServerError,
-			"errors": "failed to fetch updated record",
+			"errors": errUpdate.Error(),
 		})
 		return
 	}
@@ -180,32 +141,18 @@ func (s *NewController) UpdateUSer(c *gin.Context) {
 
 func (s *NewController) DeleteUser(c *gin.Context) {
 	// Get record id
-	id, err := strconv.Atoi(c.Param("id"))
-
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":   http.StatusBadRequest,
-			"errors": "missing record id",
-		})
-	}
+	id, _ := strconv.Atoi(c.Param("id"))
+	role, _ := c.Get("role")
 	userId := uint(id)
+	userRole, _ := role.(string)
 
-	// Find record by id
-	_, errFetch := Service.GetUserByID(userId)
-	if errFetch != nil {
-		c.JSON(http.StatusNonAuthoritativeInfo, gin.H{
-			"code":   http.StatusNonAuthoritativeInfo,
-			"errors": "record doesn't exist",
-		})
-		return
-	}
-
+	// TODO: Delete Adress
 	// Delete record
-	errDelete := Service.DeleteUser(userId)
+	errDelete := Service.DeleteUser(userRole, userId)
 	if errDelete != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":   http.StatusBadRequest,
-			"errors": "failed to delete record",
+			"errors": errDelete.Error(),
 		})
 		return
 	}
@@ -214,35 +161,6 @@ func (s *NewController) DeleteUser(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"code":    http.StatusOK,
 		"message": "record has been deleted",
-	})
-}
-
-func (s *NewController) CreateUser(c *gin.Context) {
-	// Get form data
-	var req RequestCreateUser
-
-	_ = c.BindJSON(&req)
-
-	// Assign form data JSON to struct
-	var userData ModelUser
-	userData.Email = req.Email
-	userData.Role = req.Role
-
-	// Insert Data
-	errCreate := Service.CreateUser(&userData)
-
-	if errCreate != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":   http.StatusBadRequest,
-			"errors": errCreate.Error(),
-		})
-		return
-	}
-
-	// Return data
-	c.JSON(http.StatusOK, gin.H{
-		"code": http.StatusOK,
-		"data": userData,
 	})
 }
 

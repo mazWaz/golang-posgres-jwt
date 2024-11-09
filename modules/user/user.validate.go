@@ -3,11 +3,15 @@ package user
 import "go-clean/middlewares"
 
 var ValidateQueryUser = middlewares.Validator{
-	Query: &RequestQueryUser{},
+	Query: &RequestQueryUserByAdmin{},
 }
 
 var ValidateCreateUserAdmin = middlewares.Validator{
-	Body: &RequestCreateUserAdmin{},
+	Body: &RequestCreateUserByAdmin{},
+}
+
+var ValidateCreateEmailByAdmin = middlewares.Validator{
+	Body: &RequestCreateUserByAdmin{},
 }
 
 var ValidateCreateUser = middlewares.Validator{
@@ -18,7 +22,7 @@ var ValidateUpdateUser = middlewares.Validator{
 	Param: &struct {
 		Id string `uri:"id" validate:"required,gte=0"`
 	}{},
-	Body: &RequestUpdateUser{},
+	Body: &RequestUpdateUserByAdmin{},
 }
 
 var ValidateDeleteUser = middlewares.Validator{

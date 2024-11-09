@@ -29,20 +29,10 @@ func (s *NewAddressRoutes) Init(router *gin.Engine) {
 			middlewares.Role(middlewares.SUPERADMIN, middlewares.ADMIN, middlewares.USER),
 			profile.Controller.GetProfile)
 
-		addressRoutes.POST("/",
-			middlewares.Role(middlewares.SUPERADMIN, middlewares.ADMIN, middlewares.USER),
-			middlewares.ValidationMiddleware(profile.ValidateCreateAddress),
-			profile.Controller.CreateAddress)
-
 		addressRoutes.PATCH("/:id",
 			middlewares.Role(middlewares.SUPERADMIN, middlewares.ADMIN, middlewares.USER),
 			middlewares.ValidationMiddleware(profile.ValidateUpdateAddress),
 			profile.Controller.UpdateAddress)
-
-		addressRoutes.DELETE("/:id",
-			middlewares.Role(middlewares.SUPERADMIN, middlewares.ADMIN, middlewares.USER),
-			middlewares.ValidationMiddleware(profile.ValidateDeleteAddress),
-			profile.Controller.DeleteAddress)
 	}
 }
 

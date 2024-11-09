@@ -13,12 +13,12 @@ func (s *NewAuthService) LoginWithUsernameAndEmail(credential string, password s
 
 	userData, err := user.Service.GetUserByUsernameOrEmail(credential)
 	if err != nil || userData == nil {
-		return nil, errors.New("invalid Username or Email")
+		return nil, errors.New("invalid credentials")
 	}
 
 	hashErr := utils.ComparePassword(password, userData.Password)
 	if !hashErr {
-		return nil, errors.New("invalid Username or Password")
+		return nil, errors.New("invalid credentials")
 	}
 
 	return userData, nil

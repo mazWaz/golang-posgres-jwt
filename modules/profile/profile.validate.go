@@ -1,6 +1,9 @@
 package profile
 
-import "go-clean/middlewares"
+import (
+	"go-clean/middlewares"
+	"go-clean/modules/user"
+)
 
 var ValidateQueryAddress = middlewares.Validator{
 	Param: &struct {
@@ -9,14 +12,14 @@ var ValidateQueryAddress = middlewares.Validator{
 }
 
 var ValidateCreateAddress = middlewares.Validator{
-	Body: &RequestCreateAddress{},
+	Body: &user.RequestUpdateAddress{},
 }
 
 var ValidateUpdateAddress = middlewares.Validator{
 	Param: &struct {
 		Id string `uri:"id" validate:"required,gte=0"`
 	}{},
-	Body: &RequestUpdateAddress{},
+	Body: &user.RequestUpdateUser{},
 }
 
 var ValidateDeleteAddress = middlewares.Validator{
