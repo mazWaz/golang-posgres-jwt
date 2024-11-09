@@ -15,31 +15,26 @@ func (s *NewUserRoutes) Init(router *gin.Engine) {
 	userRoutes.Use(middlewares.AuthMiddleware())
 	{
 		userRoutes.GET("/",
-			middlewares.Role(middlewares.SUPERADMIN),
+			middlewares.Role(middlewares.SUPERADMIN, middlewares.ADMIN),
 			middlewares.ValidationMiddleware(user.ValidateQueryUser),
 			user.Controller.GetUsers)
 
 		userRoutes.GET("/:id",
-			middlewares.Role(middlewares.SUPERADMIN),
+			middlewares.Role(middlewares.SUPERADMIN, middlewares.ADMIN),
 			user.Controller.GetUser)
 
-		userRoutes.POST("/admin/",
-			middlewares.Role(middlewares.SUPERADMIN),
-			middlewares.ValidationMiddleware(user.ValidateCreateUserAdmin),
-			user.Controller.CreateUserAdmin)
-
 		userRoutes.PATCH("/:id",
-			middlewares.Role(middlewares.SUPERADMIN),
+			middlewares.Role(middlewares.SUPERADMIN, middlewares.ADMIN),
 			middlewares.ValidationMiddleware(user.ValidateUpdateUser),
-			user.Controller.UpdateUSer)
+			user.Controller.UpdateUser)
 
 		userRoutes.DELETE("/:id",
-			middlewares.Role(middlewares.SUPERADMIN),
+			middlewares.Role(middlewares.SUPERADMIN, middlewares.ADMIN),
 			middlewares.ValidationMiddleware(user.ValidateDeleteUser),
 			user.Controller.DeleteUser)
 
 		userRoutes.POST("/",
-			middlewares.Role(middlewares.SUPERADMIN),
+			middlewares.Role(middlewares.SUPERADMIN, middlewares.ADMIN),
 			middlewares.ValidationMiddleware(user.ValidateCreateUser),
 			user.Controller.CreateUser)
 	}
